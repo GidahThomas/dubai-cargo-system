@@ -1,0 +1,32 @@
+<?php if (($layout ?? '') === 'public'): ?>
+    </main>
+    <footer class="public-footer">
+        <div class="public-footer-brand">
+            <strong>Dubai Computer Fast Cargo</strong>
+            <p>Fast, reliable cargo, invoice handling, and shipment tracking for modern businesses across Tanzania.</p>
+            <div class="public-footer-contact">
+                <span>📞 <?= h(company_phone()) ?></span>
+                <span>✉️ <?= h(customer_contact_email()) ?></span>
+                <a href="<?= h(company_instagram_url()) ?>" target="_blank" rel="noopener">
+                    <i class="bi bi-instagram"></i> <?= h(company_social_handle()) ?>
+                </a>
+            </div>
+        </div>
+        <div class="public-footer-links">
+            <a href="<?= h(url('track-shipment')) ?>">Track Shipment</a>
+            <a href="<?= h(url('request-invoice')) ?>">Request Invoice</a>
+            <a href="<?= h(url('contact')) ?>">Contact Us</a>
+            <a href="<?= h(url('login')) ?>">Sign In</a>
+        </div>
+    </footer>
+<?php elseif (Auth::check()): ?>
+    </div>
+<?php else: ?>
+    </main>
+<?php endif; ?>
+
+<script src="<?= h(asset('vendor/bootstrap/js/bootstrap.bundle.min.js')) ?>"></script>
+<script src="<?= h(asset('vendor/chartjs/chart.umd.js')) ?>"></script>
+<script src="<?= h(versioned_asset('js/main.js')) ?>"></script>
+</body>
+</html>

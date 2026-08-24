@@ -1,0 +1,7 @@
+node_modules/
+.runtime/
+.agents/
+.codex/
+php.ini
+.DS_Store
+Thumbs.db
