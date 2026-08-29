@@ -201,19 +201,7 @@ class PublicController extends Controller
 
     private function sendCustomerRequestEmail(string $subject, string $message): bool
     {
-        $to = customer_contact_email();
-
-        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
-            return false;
-        }
-
-        $headers = [
-            'From: ' . company_name() . ' <' . company_email() . '>',
-            'Reply-To: ' . company_email(),
-            'Content-Type: text/plain; charset=UTF-8',
-        ];
-
-        return mail($to, $subject, $message, implode("\r\n", $headers));
+        return Mailer::send(customer_contact_email(), $subject, $message, company_email());
     }
 
     public function invoicePreview(int $invoiceId): void

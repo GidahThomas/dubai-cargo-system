@@ -23,6 +23,22 @@ class AuditLog extends Model
         }
     }
 
+    public function recentFailedLogins(string $ipAddress, int $minutes): int
+    {
+        $minutes = max(1, $minutes);
+
+        $row = $this->fetch(
+            'SELECT COUNT(*) AS total
+             FROM audit_logs
+             WHERE action = "login_failed"
+               AND ip_address = :ip_address
+               AND created_at >= (NOW() - INTERVAL ' . $minutes . ' MINUTE)',
+            ['ip_address' => $ipAddress]
+        );
+
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function all(array $filters = []): array
     {
         $sql = 'SELECT a.*, u.name AS user_name, u.email AS user_email

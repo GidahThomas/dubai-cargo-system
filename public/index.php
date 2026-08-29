@@ -3,7 +3,15 @@
 declare(strict_types=1);
 
 define('ROOT_PATH', dirname(__DIR__));
-define('APP_DEBUG', true);
+
+if (file_exists(ROOT_PATH . '/vendor/autoload.php')) {
+    require ROOT_PATH . '/vendor/autoload.php';
+}
+
+require ROOT_PATH . '/app/helpers/Env.php';
+load_env(ROOT_PATH . '/.env');
+
+define('APP_DEBUG', filter_var($_ENV['APP_DEBUG'] ?? true, FILTER_VALIDATE_BOOLEAN));
 
 date_default_timezone_set('Africa/Dar_es_Salaam');
 

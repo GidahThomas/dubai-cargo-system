@@ -1,0 +1,14 @@
+{
+    "name": "dubai-computer/fast-cargo-system",
+    "description": "Dubai Computer Fast Cargo System",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Gidah Thomas",
+            "email": "gidamasaudathomas@gmail.com"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "*"
+    }
+}

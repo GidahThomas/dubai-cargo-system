@@ -1,7 +1,13 @@
 node_modules/
+vendor/
+.env
 .runtime/
 .agents/
 .codex/
 php.ini
 .DS_Store
 Thumbs.db
+
+# PHPUnit
+.phpunit.cache/
+tests/coverage/

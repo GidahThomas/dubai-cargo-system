@@ -2,6 +2,9 @@
 
 class AuthController extends Controller
 {
+    private const MAX_LOGIN_ATTEMPTS = 5;
+    private const LOGIN_LOCKOUT_MINUTES = 15;
+
     public function login(): void
     {
         if (Auth::check()) {
@@ -10,6 +13,14 @@ class AuthController extends Controller
 
         if ($this->isPost()) {
             $this->validateCsrf();
+
+            $auditLog = new AuditLog();
+            $ipAddress = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+            if ($ipAddress !== '' && $auditLog->recentFailedLogins($ipAddress, self::LOGIN_LOCKOUT_MINUTES) >= self::MAX_LOGIN_ATTEMPTS) {
+                flash('error', 'Too many failed login attempts. Please try again in ' . self::LOGIN_LOCKOUT_MINUTES . ' minutes.');
+                $this->redirect('login');
+            }
 
             $email = filter_var($this->post('email'), FILTER_VALIDATE_EMAIL);
             $password = (string) $this->post('password');
@@ -23,13 +34,13 @@ class AuthController extends Controller
             $user = $userModel->findByEmail($email);
 
             if (!$user || $user['status'] !== 'active' || !password_verify($password, $user['password'])) {
-                (new AuditLog())->create(null, 'login_failed', 'users', null, 'Email: ' . $email);
+                $auditLog->create(null, 'login_failed', 'users', null, 'Email: ' . $email);
                 flash('error', 'Invalid credentials or inactive account.');
                 $this->redirect('login');
             }
 
             Auth::login($user);
-            (new AuditLog())->create((int) $user['id'], 'login', 'users', (int) $user['id']);
+            $auditLog->create((int) $user['id'], 'login', 'users', (int) $user['id']);
             flash('success', 'Welcome back, ' . $user['name'] . '.');
             $this->redirect('dashboard');
         }

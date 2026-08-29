@@ -361,31 +361,17 @@ class InvoiceController extends Controller
 
     private function sendInvoiceEmail(string $to, array $invoice, array $settings, string $pdf): bool
     {
-        $boundary = '=_Invoice_' . bin2hex(random_bytes(12));
-        $from = filter_var($settings['email'] ?? '', FILTER_VALIDATE_EMAIL) ? $settings['email'] : 'no-reply@localhost';
         $fileName = preg_replace('/[^A-Za-z0-9_-]+/', '-', $invoice['invoice_number']) . '.pdf';
         $subject = 'Invoice ' . $invoice['invoice_number'] . ' from ' . $settings['company_name'];
 
-        $headers = [
-            'From: ' . $settings['company_name'] . ' <' . $from . '>',
-            'MIME-Version: 1.0',
-            'Content-Type: multipart/mixed; boundary="' . $boundary . '"',
-        ];
+        $message = "Dear " . $invoice['customer_name'] . ",\n\n";
+        $message .= "Please find attached invoice " . $invoice['invoice_number'] . ".\n";
+        $message .= "Grand total: " . currency_money($invoice['grand_total'], $settings['currency_code'] ?? default_currency_code()) . "\n";
+        $message .= "Balance due: " . currency_money($invoice['balance_due'], $settings['currency_code'] ?? default_currency_code()) . "\n\n";
+        $message .= "Thank you,\n" . $settings['company_name'];
 
-        $message = "--{$boundary}\r\n";
-        $message .= "Content-Type: text/plain; charset=UTF-8\r\n\r\n";
-        $message .= "Dear " . $invoice['customer_name'] . ",\r\n\r\n";
-        $message .= "Please find attached invoice " . $invoice['invoice_number'] . ".\r\n";
-        $message .= "Grand total: " . currency_money($invoice['grand_total'], $settings['currency_code'] ?? default_currency_code()) . "\r\n";
-        $message .= "Balance due: " . currency_money($invoice['balance_due'], $settings['currency_code'] ?? default_currency_code()) . "\r\n\r\n";
-        $message .= "Thank you,\r\n" . $settings['company_name'] . "\r\n";
-        $message .= "--{$boundary}\r\n";
-        $message .= "Content-Type: application/pdf; name=\"{$fileName}\"\r\n";
-        $message .= "Content-Transfer-Encoding: base64\r\n";
-        $message .= "Content-Disposition: attachment; filename=\"{$fileName}\"\r\n\r\n";
-        $message .= chunk_split(base64_encode($pdf)) . "\r\n";
-        $message .= "--{$boundary}--";
+        $replyTo = filter_var($settings['email'] ?? '', FILTER_VALIDATE_EMAIL) ? $settings['email'] : null;
 
-        return mail($to, $subject, $message, implode("\r\n", $headers));
+        return Mailer::sendWithAttachment($to, $subject, $message, $replyTo, $pdf, $fileName);
     }
 }
