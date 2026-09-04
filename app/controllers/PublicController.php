@@ -4,12 +4,15 @@ class PublicController extends Controller
 {
     public function home(): void
     {
-        $products = array_slice((new Product())->all([], true), 0, 6);
+        $productModel = new Product();
+        $products = array_slice($productModel->all([], true), 0, 6);
+        $categories = $productModel->categories(8);
 
         $this->view('public/home', [
             'layout' => 'public',
             'pageTitle' => 'Home',
             'products' => $products,
+            'categories' => $categories,
         ]);
     }
 

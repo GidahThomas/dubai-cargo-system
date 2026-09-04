@@ -26,8 +26,21 @@ DROP TABLE IF EXISTS product_images;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS locations;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE locations (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(160) NOT NULL,
+  code VARCHAR(20) NOT NULL UNIQUE,
+  address VARCHAR(255) NULL,
+  phone VARCHAR(60) NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_locations_is_active (is_active)
+) ENGINE=InnoDB;
 
 CREATE TABLE users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -35,13 +48,18 @@ CREATE TABLE users (
   email VARCHAR(160) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
   role ENUM('customer', 'manager', 'admin') NOT NULL DEFAULT 'customer',
+  location_id INT UNSIGNED NULL,
   phone VARCHAR(40) NULL,
   address VARCHAR(255) NULL,
   status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_users_location
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+    ON DELETE SET NULL,
   INDEX idx_users_role (role),
-  INDEX idx_users_status (status)
+  INDEX idx_users_status (status),
+  INDEX idx_users_location (location_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE customers (
@@ -98,8 +116,9 @@ CREATE TABLE product_images (
 
 CREATE TABLE inventory (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  product_id INT UNSIGNED NOT NULL UNIQUE,
-  sku VARCHAR(80) NOT NULL UNIQUE,
+  product_id INT UNSIGNED NOT NULL,
+  location_id INT UNSIGNED NOT NULL,
+  sku VARCHAR(80) NOT NULL,
   quantity INT NOT NULL DEFAULT 0,
   reorder_level INT NOT NULL DEFAULT 5,
   location VARCHAR(120) NULL,
@@ -108,13 +127,19 @@ CREATE TABLE inventory (
   CONSTRAINT fk_inventory_product
     FOREIGN KEY (product_id) REFERENCES products(id)
     ON DELETE CASCADE,
-  INDEX idx_inventory_quantity (quantity)
+  CONSTRAINT fk_inventory_location
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+    ON DELETE RESTRICT,
+  UNIQUE KEY uniq_inventory_product_location (product_id, location_id),
+  INDEX idx_inventory_quantity (quantity),
+  INDEX idx_inventory_sku (sku)
 ) ENGINE=InnoDB;
 
 CREATE TABLE orders (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   order_number VARCHAR(40) NOT NULL UNIQUE,
   user_id INT UNSIGNED NOT NULL,
+  location_id INT UNSIGNED NULL,
   status ENUM('pending', 'confirmed', 'processing', 'ready', 'shipped', 'delivered', 'cancelled') NOT NULL DEFAULT 'pending',
   total_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   shipping_address VARCHAR(255) NOT NULL,
@@ -124,9 +149,13 @@ CREATE TABLE orders (
   CONSTRAINT fk_orders_user
     FOREIGN KEY (user_id) REFERENCES users(id)
     ON DELETE RESTRICT,
+  CONSTRAINT fk_orders_location
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+    ON DELETE SET NULL,
   INDEX idx_orders_user (user_id),
   INDEX idx_orders_status (status),
-  INDEX idx_orders_created_at (created_at)
+  INDEX idx_orders_created_at (created_at),
+  INDEX idx_orders_location (location_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE order_items (
@@ -201,11 +230,15 @@ CREATE TABLE quotation_items (
 
 CREATE TABLE invoice_settings (
   id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
+  default_location_id INT UNSIGNED NULL,
   company_name VARCHAR(180) NOT NULL DEFAULT 'Dubai Computer Cargo',
   logo_path VARCHAR(255) NULL,
   address VARCHAR(255) NOT NULL DEFAULT 'Deira, Dubai, United Arab Emirates',
   phone VARCHAR(60) NOT NULL DEFAULT '0749006994',
   email VARCHAR(160) NOT NULL DEFAULT 'dubaicomputers14@14gmail.com',
+  support_email VARCHAR(160) NULL,
+  instagram_url VARCHAR(255) NULL,
+  social_handle VARCHAR(100) NULL,
   tin VARCHAR(80) NULL,
   vrn VARCHAR(80) NULL,
   vat_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
@@ -216,6 +249,9 @@ CREATE TABLE invoice_settings (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_invoice_settings_updated_by
     FOREIGN KEY (updated_by) REFERENCES users(id)
+    ON DELETE SET NULL,
+  CONSTRAINT fk_invoice_settings_location
+    FOREIGN KEY (default_location_id) REFERENCES locations(id)
     ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
@@ -224,6 +260,7 @@ CREATE TABLE invoices (
   invoice_number VARCHAR(50) NOT NULL UNIQUE,
   customer_id INT UNSIGNED NULL,
   order_id INT UNSIGNED NULL,
+  location_id INT UNSIGNED NULL,
   quotation_id INT UNSIGNED NULL,
   customer_name VARCHAR(160) NOT NULL,
   customer_company VARCHAR(160) NULL,
@@ -268,9 +305,13 @@ CREATE TABLE invoices (
   CONSTRAINT fk_invoices_created_by
     FOREIGN KEY (created_by) REFERENCES users(id)
     ON DELETE SET NULL,
+  CONSTRAINT fk_invoices_location
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+    ON DELETE SET NULL,
   INDEX idx_invoices_customer (customer_id),
   INDEX idx_invoices_order (order_id),
   INDEX idx_invoices_quotation (quotation_id),
+  INDEX idx_invoices_location (location_id),
   INDEX idx_invoices_status (status),
   INDEX idx_invoices_date (invoice_date),
   INDEX idx_invoices_search (invoice_number, customer_name)
@@ -330,6 +371,7 @@ CREATE TABLE payments (
 CREATE TABLE stock_entries (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   product_id INT UNSIGNED NOT NULL,
+  location_id INT UNSIGNED NULL,
   quantity INT NOT NULL,
   unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   supplier_name VARCHAR(160) NULL,
@@ -343,12 +385,17 @@ CREATE TABLE stock_entries (
   CONSTRAINT fk_stock_entries_received_by
     FOREIGN KEY (received_by) REFERENCES users(id)
     ON DELETE SET NULL,
+  CONSTRAINT fk_stock_entries_location
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+    ON DELETE RESTRICT,
   INDEX idx_stock_entries_product (product_id),
-  INDEX idx_stock_entries_received_date (received_date)
+  INDEX idx_stock_entries_received_date (received_date),
+  INDEX idx_stock_entries_location (location_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE store_sales (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  location_id INT UNSIGNED NULL,
   sale_number VARCHAR(40) NOT NULL UNIQUE,
   customer_name VARCHAR(160) NULL,
   payment_method ENUM('cash', 'bank_transfer', 'mobile_money', 'card') NOT NULL DEFAULT 'cash',
@@ -360,8 +407,12 @@ CREATE TABLE store_sales (
   CONSTRAINT fk_store_sales_sold_by
     FOREIGN KEY (sold_by) REFERENCES users(id)
     ON DELETE SET NULL,
+  CONSTRAINT fk_store_sales_location
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+    ON DELETE SET NULL,
   INDEX idx_store_sales_sale_date (sale_date),
-  INDEX idx_store_sales_payment_method (payment_method)
+  INDEX idx_store_sales_payment_method (payment_method),
+  INDEX idx_store_sales_location (location_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE store_sale_items (
@@ -477,6 +528,9 @@ CREATE TABLE audit_logs (
   INDEX idx_audit_logs_created_at (created_at)
 ) ENGINE=InnoDB;
 
+INSERT INTO locations (id, name, code, address, phone, is_active) VALUES
+(1, 'Main Branch', 'MAIN', 'Dar es Salaam, Tanzania / Deira, Dubai', '0652532646', 1);
+
 INSERT INTO users (id, name, email, password, role, phone, address, status) VALUES
 (1, 'Company Owner', 'admin@dubai-fast-cargo.test', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', '+971500000001', 'Dubai, UAE', 'active'),
 (2, 'Store Manager', 'manager@dubai-fast-cargo.test', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'manager', '+971500000002', 'Deira, Dubai', 'active'),
@@ -502,22 +556,22 @@ INSERT INTO products (id, name, category, brand, description, specifications, pr
 (14, 'Acer Chromebook 314', 'Chromebooks', 'Acer', 'Affordable computer for browsing, online classes, and light office use.', 'Intel Celeron\n4GB RAM\n64GB eMMC\n14 inch display\nChromeOS', 850000.00, NULL, 'active', 2),
 (15, 'Dell PowerEdge T150 Server', 'Servers', 'Dell', 'Entry-level business server for files, accounting systems, and backups.', 'Intel Xeon\n16GB ECC RAM\n2TB storage\nTower server', 3600000.00, NULL, 'active', 2);
 
-INSERT INTO inventory (product_id, sku, quantity, reorder_level, location, supplier_name) VALUES
-(1, 'LAP-DELL-5440', 15, 4, 'Dubai Warehouse A', 'Dubai Tech Suppliers LLC'),
-(2, 'PRN-HP-LJPRO', 9, 3, 'Dubai Warehouse B', 'Office Machines UAE'),
-(3, 'MON-SAM-27FHD', 22, 5, 'Dubai Warehouse A', 'Screen World Trading'),
-(4, 'ACC-LOG-MXM', 6, 5, 'Retail Shelf 1', 'Gulf Accessories'),
-(5, 'LAP-HP-840G9', 8, 3, 'Dubai Warehouse A', 'Dubai Tech Suppliers LLC'),
-(6, 'LAP-LEN-T14', 10, 3, 'Dubai Warehouse A', 'Dubai Tech Suppliers LLC'),
-(7, 'LAP-APP-MBA-M2', 4, 2, 'Premium Shelf', 'Apple UAE Distributor'),
-(8, 'DESK-HP-PD400', 12, 4, 'Dubai Warehouse B', 'Office Machines UAE'),
-(9, 'DESK-DELL-7010', 11, 4, 'Dubai Warehouse B', 'Dubai Tech Suppliers LLC'),
-(10, 'MINI-LEN-M70Q', 7, 3, 'Retail Shelf 2', 'Gulf Computer Parts'),
-(11, 'AIO-HP-840', 5, 2, 'Premium Shelf', 'Office Machines UAE'),
-(12, 'GAME-RTX4060', 3, 2, 'Premium Shelf', 'Gulf Computer Parts'),
-(13, 'WORK-DELL-3660', 2, 1, 'Premium Shelf', 'Dubai Tech Suppliers LLC'),
-(14, 'CHR-ACER-314', 14, 4, 'Retail Shelf 3', 'Gulf Computer Parts'),
-(15, 'SRV-DELL-T150', 2, 1, 'Dubai Warehouse C', 'Server World UAE');
+INSERT INTO inventory (product_id, location_id, sku, quantity, reorder_level, location, supplier_name) VALUES
+(1, 1, 'LAP-DELL-5440', 15, 4, 'Dubai Warehouse A', 'Dubai Tech Suppliers LLC'),
+(2, 1, 'PRN-HP-LJPRO', 9, 3, 'Dubai Warehouse B', 'Office Machines UAE'),
+(3, 1, 'MON-SAM-27FHD', 22, 5, 'Dubai Warehouse A', 'Screen World Trading'),
+(4, 1, 'ACC-LOG-MXM', 6, 5, 'Retail Shelf 1', 'Gulf Accessories'),
+(5, 1, 'LAP-HP-840G9', 8, 3, 'Dubai Warehouse A', 'Dubai Tech Suppliers LLC'),
+(6, 1, 'LAP-LEN-T14', 10, 3, 'Dubai Warehouse A', 'Dubai Tech Suppliers LLC'),
+(7, 1, 'LAP-APP-MBA-M2', 4, 2, 'Premium Shelf', 'Apple UAE Distributor'),
+(8, 1, 'DESK-HP-PD400', 12, 4, 'Dubai Warehouse B', 'Office Machines UAE'),
+(9, 1, 'DESK-DELL-7010', 11, 4, 'Dubai Warehouse B', 'Dubai Tech Suppliers LLC'),
+(10, 1, 'MINI-LEN-M70Q', 7, 3, 'Retail Shelf 2', 'Gulf Computer Parts'),
+(11, 1, 'AIO-HP-840', 5, 2, 'Premium Shelf', 'Office Machines UAE'),
+(12, 1, 'GAME-RTX4060', 3, 2, 'Premium Shelf', 'Gulf Computer Parts'),
+(13, 1, 'WORK-DELL-3660', 2, 1, 'Premium Shelf', 'Dubai Tech Suppliers LLC'),
+(14, 1, 'CHR-ACER-314', 14, 4, 'Retail Shelf 3', 'Gulf Computer Parts'),
+(15, 1, 'SRV-DELL-T150', 2, 1, 'Dubai Warehouse C', 'Server World UAE');
 
 INSERT INTO product_images (product_id, image_path, caption, is_primary, sort_order) VALUES
 (1, 'uploads/product-1782122339-1673.png', 'Dell Latitude 5440 Laptop', 1, 0);
@@ -538,21 +592,21 @@ INSERT INTO quotations (
 INSERT INTO quotation_items (quotation_id, product_id, product_name, product_image, quantity, unit_price, discount, notes, line_total) VALUES
 (1, 1, 'Dell Latitude 5440 Laptop', 'uploads/product-1782122339-1673.png', 1, 1950000.00, 0.00, 'Demo quotation item.', 1950000.00);
 
-INSERT INTO orders (id, order_number, user_id, status, total_amount, shipping_address, notes) VALUES
-(1, 'ORD-20260622-0001', 3, 'confirmed', 1950000.00, 'Dar es Salaam, Tanzania', 'Demo order for laptop shipment.');
+INSERT INTO orders (id, order_number, user_id, location_id, status, total_amount, shipping_address, notes) VALUES
+(1, 'ORD-20260622-0001', 3, 1, 'confirmed', 1950000.00, 'Dar es Salaam, Tanzania', 'Demo order for laptop shipment.');
 
 INSERT INTO order_items (order_id, product_id, quantity, unit_price, line_total) VALUES
 (1, 1, 1, 1950000.00, 1950000.00);
 
-INSERT INTO invoice_settings (id, company_name, logo_path, address, phone, email, tin, vrn, vat_rate, currency_code, terms, updated_by) VALUES
-(1, 'Dubai Computer Cargo', NULL, 'Dar es Salaam, Tanzania / Deira, Dubai', '0749006994', 'dubaicomputers14@14gmail.com', 'TIN-DCF-2026', 'VRN-DCF-2026', 0.00, 'TZS', 'Payment is due on or before the invoice due date. Goods remain company property until full payment is received. Customer support: gidamasaudathomas@gmail.com.', 1);
+INSERT INTO invoice_settings (id, default_location_id, company_name, logo_path, address, phone, email, support_email, instagram_url, social_handle, tin, vrn, vat_rate, currency_code, terms, updated_by) VALUES
+(1, 1, 'Dubai Computer Cargo', NULL, 'Dar es Salaam, Tanzania / Deira, Dubai', '0749006994', 'dubaicomputers14@14gmail.com', 'gidamasaudathomas@gmail.com', 'https://www.instagram.com/dubai_computers/', '@dubai_computers', 'TIN-DCF-2026', 'VRN-DCF-2026', 0.00, 'TZS', 'Payment is due on or before the invoice due date. Goods remain company property until full payment is received. Customer support: gidamasaudathomas@gmail.com.', 1);
 
 INSERT INTO invoices (
-  invoice_id, invoice_number, customer_id, order_id, customer_name, customer_company, customer_phone,
+  invoice_id, invoice_number, customer_id, order_id, location_id, customer_name, customer_company, customer_phone,
   customer_email, customer_address, customer_tin, customer_vrn, invoice_date, due_date,
   subtotal, discount, vat, grand_total, balance_due, status, created_by
 ) VALUES
-(1, 'INV-20260622-0001', 1, 1, 'Demo Customer', 'Demo Customer Trading', '+255700000003',
+(1, 'INV-20260622-0001', 1, 1, 1, 'Demo Customer', 'Demo Customer Trading', '+255700000003',
  'customer@dubai-fast-cargo.test', 'Dar es Salaam, Tanzania', 'TIN-000-2026', 'VRN-000-2026',
  CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 7 DAY), 1950000.00, 0.00, 0.00, 1950000.00, 0.00, 'paid', 2);
 
@@ -562,12 +616,12 @@ INSERT INTO invoice_items (invoice_id, product_id, product_name, product_image, 
 INSERT INTO payments (order_id, invoice_id, payment_reference, method, amount, status, submitted_at, confirmed_by, confirmed_at, notes) VALUES
 (1, 1, 'BANK-DEMO-001', 'bank_transfer', 1950000.00, 'confirmed', CURRENT_TIMESTAMP, 2, CURRENT_TIMESTAMP, 'Seed payment confirmed for demo invoice.');
 
-INSERT INTO stock_entries (product_id, quantity, unit_cost, supplier_name, received_date, received_by, notes) VALUES
-(1, 5, 1550000.00, 'Dubai Tech Suppliers LLC', CURRENT_DATE, 2, 'Opening stock intake demo.'),
-(4, 3, 120000.00, 'Gulf Accessories', CURRENT_DATE, 2, 'Accessories restock demo.');
+INSERT INTO stock_entries (product_id, location_id, quantity, unit_cost, supplier_name, received_date, received_by, notes) VALUES
+(1, 1, 5, 1550000.00, 'Dubai Tech Suppliers LLC', CURRENT_DATE, 2, 'Opening stock intake demo.'),
+(4, 1, 3, 120000.00, 'Gulf Accessories', CURRENT_DATE, 2, 'Accessories restock demo.');
 
-INSERT INTO store_sales (id, sale_number, customer_name, payment_method, total_amount, sale_date, sold_by, notes) VALUES
-(1, 'SALE-20260622-0001', 'Walk-in Customer', 'cash', 180000.00, CURRENT_DATE, 2, 'Demo counter sale.');
+INSERT INTO store_sales (id, location_id, sale_number, customer_name, payment_method, total_amount, sale_date, sold_by, notes) VALUES
+(1, 1, 'SALE-20260622-0001', 'Walk-in Customer', 'cash', 180000.00, CURRENT_DATE, 2, 'Demo counter sale.');
 
 INSERT INTO store_sale_items (sale_id, product_id, quantity, unit_price, line_total) VALUES
 (1, 4, 1, 180000.00, 180000.00);

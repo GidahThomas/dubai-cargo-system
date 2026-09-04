@@ -1,7 +1,7 @@
 <section class="public-page-heading">
     <span class="public-kicker">Sales and cargo support</span>
     <h1>Contact Us</h1>
-    <p>Send your product, invoice, or cargo question to the Dubai Computer Fast Cargo team.</p>
+    <p>Send your product, invoice, or cargo question to the <?= h(company_name()) ?> team.</p>
 </section>
 
 <section class="public-contact-grid">
@@ -31,16 +31,18 @@
     </form>
 
     <aside class="public-contact-card">
-        <h2>Dubai Computer Fast Cargo</h2>
-        <p>Dar es Salaam, Tanzania / Deira, Dubai</p>
+        <h2><?= h(company_name()) ?></h2>
+        <p><?= h(company_address()) ?></p>
         <p><i class="bi bi-telephone"></i> <?= h(company_phone()) ?></p>
         <p><i class="bi bi-envelope"></i> <?= h(company_email()) ?></p>
         <p><i class="bi bi-headset"></i> <?= h(customer_contact_email()) ?></p>
-        <p>
-            <i class="bi bi-instagram"></i>
-            <a href="<?= h(company_instagram_url()) ?>" target="_blank" rel="noopener"><?= h(company_social_handle()) ?></a>
-            <small class="d-block text-muted">Same handle on all social platforms</small>
-        </p>
+        <?php if (company_instagram_url()): ?>
+            <p>
+                <i class="bi bi-instagram"></i>
+                <a href="<?= h(company_instagram_url()) ?>" target="_blank" rel="noopener"><?= h(company_social_handle()) ?></a>
+                <small class="d-block text-muted">Same handle on all social platforms</small>
+            </p>
+        <?php endif; ?>
         <a class="btn btn-outline-primary" href="<?= h(url('request-quotation')) ?>">
             <i class="bi bi-chat-square-text"></i> Request Quotation
         </a>

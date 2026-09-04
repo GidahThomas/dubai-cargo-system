@@ -2,6 +2,7 @@
     <div>
         <p class="eyebrow">Operations</p>
         <h1>Store Manager Dashboard</h1>
+        <p class="text-muted mb-0">Showing: <strong><?= h($activeLocation['name'] ?? 'All Locations (combined)') ?></strong></p>
     </div>
     <div class="page-actions">
         <a class="btn btn-outline-primary" href="<?= h(url('store')) ?>">

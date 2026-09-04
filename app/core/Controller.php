@@ -54,6 +54,15 @@ abstract class Controller
         Auth::requireRole($roles);
     }
 
+    /**
+     * The location the current staff member is viewing/operating in.
+     * Null means "all locations" (no filter).
+     */
+    protected function activeLocationId(): ?int
+    {
+        return active_location_id();
+    }
+
     protected function requestMethod(): string
     {
         return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');

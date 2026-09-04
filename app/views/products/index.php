@@ -1,7 +1,10 @@
 <div class="page-header">
     <div>
-        <p class="eyebrow">Computer inventory</p>
+        <p class="eyebrow">Product inventory</p>
         <h1>Products & Uploads</h1>
+        <p class="text-muted mb-0">
+            Stock shown for: <strong><?= h($activeLocation['name'] ?? 'All Locations (combined)') ?></strong>
+        </p>
     </div>
     <?php if (Auth::hasRole(['manager', 'admin'])): ?>
         <a class="btn btn-primary" href="<?= h(url('products/create')) ?>">

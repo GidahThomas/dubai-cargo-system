@@ -40,6 +40,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sidebarBackdrop?.addEventListener('click', closeSidebar);
 
+    const publicNavLinks = document.querySelector('[data-public-nav-links]');
+    const publicNavToggle = document.querySelector('[data-public-nav-toggle]');
+    const publicNavBackdrop = document.querySelector('[data-public-nav-backdrop]');
+
+    const closePublicNav = () => {
+        publicNavLinks?.classList.remove('is-open');
+        publicNavBackdrop?.classList.remove('is-open');
+        publicNavToggle?.setAttribute('aria-expanded', 'false');
+    };
+
+    if (publicNavLinks && publicNavToggle) {
+        publicNavToggle.addEventListener('click', () => {
+            const isOpen = publicNavLinks.classList.toggle('is-open');
+            publicNavBackdrop?.classList.toggle('is-open', isOpen);
+            publicNavToggle.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        publicNavLinks.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', closePublicNav);
+        });
+    }
+
+    publicNavBackdrop?.addEventListener('click', closePublicNav);
+
     const saleProduct = document.getElementById('sale_product_id');
     const saleUnitPrice = document.getElementById('unit_price');
 

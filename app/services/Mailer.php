@@ -96,7 +96,7 @@ class Mailer
                 $headers[] = 'Reply-To: ' . $replyTo;
             }
 
-            return mail($to, $subject, $message, implode("\r\n", $headers));
+            return @mail($to, $subject, $message, implode("\r\n", $headers));
         }
 
         $boundary = '=_Mail_' . bin2hex(random_bytes(12));
@@ -120,6 +120,6 @@ class Mailer
         $body .= chunk_split(base64_encode($attachmentContent)) . "\r\n";
         $body .= "--{$boundary}--";
 
-        return mail($to, $subject, $body, implode("\r\n", $headers));
+        return @mail($to, $subject, $body, implode("\r\n", $headers));
     }
 }

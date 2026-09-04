@@ -1,6 +1,6 @@
 <div class="page-header">
     <div>
-        <p class="eyebrow">Computer inventory upload</p>
+        <p class="eyebrow">Product inventory upload</p>
         <h1>Upload Product</h1>
     </div>
     <a class="btn btn-outline-secondary" href="<?= h(url('products')) ?>">
@@ -47,7 +47,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="supplier_name">Supplier</label>
-                <input class="form-control" id="supplier_name" name="supplier_name" placeholder="e.g. Dubai Tech Traders">
+                <input class="form-control" id="supplier_name" name="supplier_name" placeholder="e.g. Acme Supplies Ltd">
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="status">Status</label>

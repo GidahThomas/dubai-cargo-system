@@ -1,6 +1,6 @@
 <section class="auth-card auth-card-wide">
     <div class="auth-brand">
-        <img class="brand-logo" src="<?= h(asset(company_logo_path())) ?>" alt="<?= h(company_name()) ?> logo">
+        <img class="brand-logo" src="<?= h(public_url(company_logo_path())) ?>" alt="<?= h(company_name()) ?> logo">
         <div>
             <h1>Customer Registration</h1>
             <p>Create an account to order electronics and track cargo shipments.</p>

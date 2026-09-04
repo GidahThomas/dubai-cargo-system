@@ -1,6 +1,6 @@
 <div class="page-header">
     <div>
-        <p class="eyebrow">Computer inventory upload</p>
+        <p class="eyebrow">Product inventory upload</p>
         <h1>Edit Product</h1>
     </div>
     <a class="btn btn-outline-secondary" href="<?= h(url('products')) ?>">
@@ -27,26 +27,6 @@
             <div class="col-md-3">
                 <label class="form-label" for="price">Price (TZS)</label>
                 <input type="number" step="1" min="0" class="form-control" id="price" name="price" value="<?= h($product['price']) ?>" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="sku">SKU</label>
-                <input class="form-control" id="sku" name="sku" value="<?= h($product['sku']) ?>">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="quantity">Quantity</label>
-                <input type="number" min="0" class="form-control" id="quantity" name="quantity" value="<?= (int) $product['quantity'] ?>">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="reorder_level">Reorder level</label>
-                <input type="number" min="0" class="form-control" id="reorder_level" name="reorder_level" value="<?= (int) $product['reorder_level'] ?>">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="location">Location</label>
-                <input class="form-control" id="location" name="location" value="<?= h($product['location']) ?>" placeholder="e.g. Warehouse A, Shelf 3">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="supplier_name">Supplier</label>
-                <input class="form-control" id="supplier_name" name="supplier_name" value="<?= h($product['supplier_name']) ?>" placeholder="e.g. Dubai Tech Traders">
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="status">Status</label>
@@ -91,4 +71,55 @@
             </button>
         </div>
     </form>
+</section>
+
+<section class="panel mt-4">
+    <div class="panel-header">
+        <h2>Stock by Location</h2>
+    </div>
+    <?php foreach ($product['stock_by_location'] ?? [] as $stock): ?>
+        <form id="stockForm<?= (int) $stock['location_id'] ?>" method="post" action="<?= h(url('products/updateStock/' . $product['id'])) ?>">
+            <?= Auth::csrfField() ?>
+            <input type="hidden" name="location_id" value="<?= (int) $stock['location_id'] ?>">
+        </form>
+    <?php endforeach; ?>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th>Location</th>
+                <th>SKU</th>
+                <th>Quantity</th>
+                <th>Reorder level</th>
+                <th>Shelf / bin</th>
+                <th>Supplier</th>
+                <th class="text-end">Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($product['stock_by_location'] ?? [] as $stock): ?>
+                <?php $formId = 'stockForm' . (int) $stock['location_id']; ?>
+                <tr>
+                    <td>
+                        <strong><?= h($stock['location_name']) ?></strong>
+                        <small class="code-text d-block"><?= h($stock['location_code']) ?></small>
+                    </td>
+                    <td><input form="<?= h($formId) ?>" class="form-control form-control-sm" name="sku" value="<?= h($stock['sku'] ?? '') ?>" placeholder="<?= h($product['sku'] ?? '') ?>"></td>
+                    <td><input form="<?= h($formId) ?>" type="number" min="0" class="form-control form-control-sm" name="quantity" value="<?= (int) ($stock['quantity'] ?? 0) ?>" style="max-width: 100px;"></td>
+                    <td><input form="<?= h($formId) ?>" type="number" min="0" class="form-control form-control-sm" name="reorder_level" value="<?= (int) ($stock['reorder_level'] ?? 5) ?>" style="max-width: 100px;"></td>
+                    <td><input form="<?= h($formId) ?>" class="form-control form-control-sm" name="location_label" value="<?= h($stock['location'] ?? '') ?>" placeholder="e.g. Shelf 3"></td>
+                    <td><input form="<?= h($formId) ?>" class="form-control form-control-sm" name="supplier_name" value="<?= h($stock['supplier_name'] ?? '') ?>"></td>
+                    <td class="text-end">
+                        <button form="<?= h($formId) ?>" class="btn btn-sm btn-outline-primary" type="submit">
+                            <i class="bi bi-save"></i> Save
+                        </button>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (empty($product['stock_by_location'])): ?>
+                <tr><td colspan="7" class="text-center text-muted py-4">No active locations yet.</td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </section>

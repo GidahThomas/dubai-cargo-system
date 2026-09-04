@@ -40,11 +40,13 @@ class DashboardController extends Controller
     private function manager(): void
     {
         $ledger = new StoreLedger();
+        $locationId = $this->activeLocationId();
 
         $this->view('manager/dashboard', [
             'pageTitle' => 'Store Manager Dashboard',
+            'activeLocation' => $locationId !== null ? (new Location())->find($locationId) : null,
             'productCount' => (new Product())->countActive(),
-            'pendingOrders' => (new Order())->countByStatus('pending'),
+            'pendingOrders' => (new Order())->countByStatus('pending', $locationId),
             'pendingPayments' => (new Payment())->countByStatus('pending'),
             'inTransitShipments' => (new Shipment())->countByStatus('in_transit'),
             'pendingQuotations' => (new Quotation())->countByStatus('pending'),
@@ -52,13 +54,13 @@ class DashboardController extends Controller
             'generatedInvoices' => (new Invoice())->all(),
             'pendingDeliveries' => (new Delivery())->countByStatus('pending'),
             'completedDeliveries' => (new Delivery())->countByStatus('delivered'),
-            'lowStock' => (new Product())->lowStock(8),
-            'recentOrders' => (new Order())->recent(8),
+            'lowStock' => (new Product())->lowStock(8, $locationId),
+            'recentOrders' => (new Order())->recent(8, $locationId),
             'chartData' => [
-                'dailySales' => $ledger->chartSeries('daily'),
-                'weeklySales' => $ledger->chartSeries('weekly'),
-                'monthlySales' => $ledger->chartSeries('monthly'),
-                'ordersByStatus' => (new Order())->statusCounts(),
+                'dailySales' => $ledger->chartSeries('daily', $locationId),
+                'weeklySales' => $ledger->chartSeries('weekly', $locationId),
+                'monthlySales' => $ledger->chartSeries('monthly', $locationId),
+                'ordersByStatus' => (new Order())->statusCounts($locationId),
                 'paymentsByStatus' => (new Payment())->statusCounts(),
                 'shipmentsByStatus' => (new Shipment())->statusCounts(),
             ],
@@ -68,28 +70,30 @@ class DashboardController extends Controller
     private function admin(): void
     {
         $ledger = new StoreLedger();
+        $locationId = $this->activeLocationId();
 
         $this->view('admin/dashboard', [
             'pageTitle' => 'Executive Dashboard',
+            'activeLocation' => $locationId !== null ? (new Location())->find($locationId) : null,
             'totalUsers' => (new User())->countByRole(),
             'totalCustomers' => (new User())->countByRole('customer'),
             'productCount' => (new Product())->countActive(),
-            'totalOrders' => (new Order())->countByStatus(),
-            'salesTotal' => (new Order())->salesTotal(),
+            'totalOrders' => (new Order())->countByStatus(null, $locationId),
+            'salesTotal' => (new Order())->salesTotal($locationId),
             'shipmentCount' => (new Shipment())->countByStatus(),
             'pendingQuotations' => (new Quotation())->countByStatus('pending'),
             'approvedQuotations' => (new Quotation())->countByStatus('approved'),
             'generatedInvoices' => (new Invoice())->all(),
             'pendingDeliveries' => (new Delivery())->countByStatus('pending'),
             'completedDeliveries' => (new Delivery())->countByStatus('delivered'),
-            'monthlySales' => (new Order())->monthlySales(),
-            'recentOrders' => (new Order())->recent(8),
+            'monthlySales' => (new Order())->monthlySales($locationId),
+            'recentOrders' => (new Order())->recent(8, $locationId),
             'auditLogs' => (new AuditLog())->all(),
             'chartData' => [
-                'dailySales' => $ledger->chartSeries('daily'),
-                'weeklySales' => $ledger->chartSeries('weekly'),
-                'monthlySales' => $ledger->chartSeries('monthly'),
-                'ordersByStatus' => (new Order())->statusCounts(),
+                'dailySales' => $ledger->chartSeries('daily', $locationId),
+                'weeklySales' => $ledger->chartSeries('weekly', $locationId),
+                'monthlySales' => $ledger->chartSeries('monthly', $locationId),
+                'ordersByStatus' => (new Order())->statusCounts($locationId),
                 'paymentsByStatus' => (new Payment())->statusCounts(),
                 'shipmentsByStatus' => (new Shipment())->statusCounts(),
             ],

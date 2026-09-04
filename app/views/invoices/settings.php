@@ -33,6 +33,18 @@
                 <label class="form-label" for="address">Address</label>
                 <input class="form-control" id="address" name="address" value="<?= h($settings['address']) ?>" required>
             </div>
+            <div class="col-md-4">
+                <label class="form-label" for="support_email">Customer Support Email</label>
+                <input type="email" class="form-control" id="support_email" name="support_email" value="<?= h($settings['support_email'] ?? $settings['email']) ?>" placeholder="Shown on Contact Us and public request forms">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="social_handle">Social Handle</label>
+                <input class="form-control" id="social_handle" name="social_handle" value="<?= h($settings['social_handle'] ?? '') ?>" placeholder="@yourbusiness">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="instagram_url">Social Link</label>
+                <input class="form-control" id="instagram_url" name="instagram_url" value="<?= h($settings['instagram_url'] ?? '') ?>" placeholder="https://instagram.com/yourbusiness">
+            </div>
             <div class="col-md-3">
                 <label class="form-label" for="tin">TIN</label>
                 <input class="form-control" id="tin" name="tin" value="<?= h($settings['tin'] ?? '') ?>" placeholder="Taxpayer Identification Number">

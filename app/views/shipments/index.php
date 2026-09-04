@@ -78,11 +78,11 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="carrier">Carrier</label>
-                <input class="form-control" id="carrier" name="carrier" value="Dubai Fast Cargo">
+                <input class="form-control" id="carrier" name="carrier" value="<?= h(company_name()) ?>">
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="origin">Origin</label>
-                <input class="form-control" id="origin" name="origin" value="Dubai">
+                <input class="form-control" id="origin" name="origin" placeholder="e.g. Warehouse city">
             </div>
             <div class="col-md-3">
                 <label class="form-label" for="destination">Destination</label>

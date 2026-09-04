@@ -46,6 +46,7 @@ final class Auth
             'name' => $user['name'],
             'email' => $user['email'],
             'role' => $user['role'],
+            'location_id' => isset($user['location_id']) ? (int) $user['location_id'] : null,
         ];
 
         $_SESSION['last_regenerated_at'] = time();
@@ -215,44 +216,106 @@ function flash(string $key, ?string $message = null): ?string
     return $value;
 }
 
+function active_location_id(): ?int
+{
+    if (array_key_exists('active_location_id', $_SESSION)) {
+        return $_SESSION['active_location_id'] !== null ? (int) $_SESSION['active_location_id'] : null;
+    }
+
+    $homeLocationId = Auth::user()['location_id'] ?? null;
+
+    return $homeLocationId !== null ? (int) $homeLocationId : null;
+}
+
+function company_settings(): array
+{
+    static $settings = null;
+
+    if ($settings === null) {
+        $settings = (new Invoice())->settings();
+    }
+
+    return $settings;
+}
+
 function company_name(): string
 {
-    return 'Dubai Computer Fast Cargo';
+    return company_settings()['company_name'] ?: 'Dubai Computer Fast Cargo';
 }
 
 function company_logo_path(): string
 {
-    return 'images/LOGO.png';
+    return company_settings()['logo_path'] ?: 'assets/images/LOGO.png';
 }
 
 function company_phone(): string
 {
-    return '0652532646';
+    return company_settings()['phone'] ?: '0652532646';
 }
 
 function company_email(): string
 {
-    return 'dubaicomputers14@14gmail.com';
+    return company_settings()['email'] ?: 'dubaicomputers14@14gmail.com';
+}
+
+function company_address(): string
+{
+    return company_settings()['address'] ?: '';
 }
 
 function customer_contact_email(): string
 {
-    return 'gidamasaudathomas@gmail.com';
+    return company_settings()['support_email'] ?: company_email();
 }
 
 function company_social_handle(): string
 {
-    return '@dubai_computers';
+    return company_settings()['social_handle'] ?: '';
 }
 
 function company_instagram_url(): string
 {
-    return 'https://www.instagram.com/dubai_computers/';
+    return company_settings()['instagram_url'] ?: '';
+}
+
+function category_icon(string $category): string
+{
+    $category = strtolower($category);
+
+    $map = [
+        'laptop' => 'bi-laptop',
+        'desktop' => 'bi-pc-display',
+        'all-in-one' => 'bi-pc-display-horizontal',
+        'mini pc' => 'bi-cpu',
+        'workstation' => 'bi-cpu',
+        'server' => 'bi-hdd-rack',
+        'printer' => 'bi-printer',
+        'monitor' => 'bi-display',
+        'chromebook' => 'bi-laptop',
+        'gaming' => 'bi-controller',
+        'network' => 'bi-hdd-network',
+        'router' => 'bi-hdd-network',
+        'accessor' => 'bi-mouse2',
+        'phone' => 'bi-phone',
+        'tablet' => 'bi-tablet',
+        'camera' => 'bi-camera',
+        'audio' => 'bi-headphones',
+        'headphone' => 'bi-headphones',
+        'storage' => 'bi-device-ssd',
+    ];
+
+    foreach ($map as $needle => $icon) {
+        if (str_contains($category, $needle)) {
+            return $icon;
+        }
+    }
+
+    return 'bi-box-seam';
 }
 
 function default_currency_code(): string
 {
-    return 'TZS';
+    return company_settings()['currency_code'] ?: 'TZS';
 }
 
 function money(float|int|string|null $amount): string

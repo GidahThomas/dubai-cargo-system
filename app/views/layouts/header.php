@@ -1,5 +1,5 @@
 <?php
-$pageTitle = $pageTitle ?? 'Dubai Computer Fast Cargo System';
+$pageTitle = $pageTitle ?? company_name();
 $layout = $layout ?? (Auth::check() ? 'app' : 'auth');
 $success = flash('success');
 $error = flash('error');
@@ -13,7 +13,7 @@ $info = flash('info');
     <?php if (Auth::check()): ?>
         <meta name="csrf-token" content="<?= h(Auth::csrfToken()) ?>">
     <?php endif; ?>
-    <title><?= h($pageTitle) ?> | Dubai Computer Fast Cargo</title>
+    <title><?= h($pageTitle) ?> | <?= h(company_name()) ?></title>
     <link href="<?= h(asset('vendor/bootstrap/css/bootstrap.min.css')) ?>" rel="stylesheet">
     <link href="<?= h(asset('vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>" rel="stylesheet">
     <link href="<?= h(asset('vendor/fonts/fonts.css')) ?>" rel="stylesheet">
@@ -38,18 +38,25 @@ $info = flash('info');
     <header class="public-header">
         <nav class="public-nav">
             <a class="public-brand" href="<?= h(url()) ?>">
-                <img class="brand-logo" src="<?= h(asset(company_logo_path())) ?>" alt="<?= h(company_name()) ?> logo">
-                <span>Dubai Computer <strong>Fast Cargo</strong></span>
+                <img class="brand-logo" src="<?= h(public_url(company_logo_path())) ?>" alt="<?= h(company_name()) ?> logo">
+                <span><?= h(company_name()) ?></span>
             </a>
-            <div class="public-nav-links">
+            <button class="public-nav-toggle" type="button" data-public-nav-toggle aria-label="Open navigation" aria-expanded="false">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="public-nav-links" data-public-nav-links>
                 <a href="<?= h(url()) ?>">Home</a>
                 <a href="<?= h(url('products')) ?>">Products</a>
                 <a href="<?= h(url('track-shipment')) ?>">Track Shipment</a>
                 <a href="<?= h(url('request-invoice')) ?>">Request Invoice</a>
                 <a href="<?= h(url('contact')) ?>">Contact</a>
-                <a class="btn btn-outline-primary btn-sm" href="<?= h(url('login')) ?>">Sign In</a>
+                <a class="btn btn-light btn-sm" href="<?= h(url('request-quotation')) ?>">
+                    <i class="bi bi-truck"></i> Get Quote
+                </a>
+                <a class="btn btn-outline-light btn-sm" href="<?= h(url('login')) ?>">Sign In</a>
             </div>
         </nav>
+        <div class="public-nav-backdrop" data-public-nav-backdrop></div>
     </header>
     <main class="public-main">
 <?php elseif (Auth::check()): ?>

@@ -120,7 +120,7 @@ $periodLabels = [
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" for="supplier_name">Supplier</label>
-                    <input class="form-control" id="supplier_name" name="supplier_name" placeholder="e.g. Dubai Tech Traders">
+                    <input class="form-control" id="supplier_name" name="supplier_name" placeholder="e.g. Acme Supplies Ltd">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" for="received_date">Tarehe</label>

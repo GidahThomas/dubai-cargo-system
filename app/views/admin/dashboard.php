@@ -2,6 +2,7 @@
     <div>
         <p class="eyebrow">Executive view</p>
         <h1>Company Owner Dashboard</h1>
+        <p class="text-muted mb-0">Showing: <strong><?= h($activeLocation['name'] ?? 'All Locations (combined)') ?></strong></p>
     </div>
     <div class="page-actions">
         <a class="btn btn-outline-primary" href="<?= h(url('users')) ?>">

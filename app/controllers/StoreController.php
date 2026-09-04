@@ -26,7 +26,7 @@ class StoreController extends Controller
             'sales' => $ledger->sales($period),
             'transactions' => $ledger->transactions($filters),
             'topProducts' => $ledger->topSellingProducts($period),
-            'products' => (new Product())->all([], true),
+            'products' => (new Product())->all([], true, $this->activeLocationId()),
         ]);
     }
 
@@ -49,8 +49,15 @@ class StoreController extends Controller
             $this->redirect('store');
         }
 
+        $locationId = $this->activeLocationId();
+
+        if ($locationId === null) {
+            flash('error', 'Chagua tawi (location) kwanza kabla ya kuingiza mzigo.');
+            $this->redirect('store');
+        }
+
         try {
-            $entryId = (new StoreLedger())->recordStockEntry($data, Auth::id());
+            $entryId = (new StoreLedger())->recordStockEntry($data, Auth::id(), $locationId);
             (new AuditLog())->create(Auth::id(), 'stock_entry_recorded', 'stock_entries', $entryId, 'Qty: ' . $data['quantity']);
             flash('success', 'Mzigo ulioingia umerekodiwa na stock imeongezeka.');
         } catch (Throwable $exception) {
@@ -85,8 +92,15 @@ class StoreController extends Controller
             $this->redirect('store');
         }
 
+        $locationId = $this->activeLocationId();
+
+        if ($locationId === null) {
+            flash('error', 'Chagua tawi (location) kwanza kabla ya kuuza.');
+            $this->redirect('store');
+        }
+
         try {
-            $saleId = (new StoreLedger())->recordSale($data, Auth::id());
+            $saleId = (new StoreLedger())->recordSale($data, Auth::id(), $locationId);
             (new AuditLog())->create(Auth::id(), 'store_sale_recorded', 'store_sales', $saleId, 'Qty: ' . $data['quantity']);
             flash('success', 'Sale imerekodiwa, stock imepungua, na pesa imeingia kwenye ripoti.');
         } catch (Throwable $exception) {

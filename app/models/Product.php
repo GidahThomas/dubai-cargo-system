@@ -2,13 +2,26 @@
 
 class Product extends Model
 {
-    public function all(array $filters = [], bool $activeOnly = false): array
+    public function all(array $filters = [], bool $activeOnly = false, ?int $locationId = null): array
     {
-        $sql = 'SELECT p.*, i.sku, i.quantity, i.reorder_level, i.location, i.supplier_name
-                FROM products p
-                LEFT JOIN inventory i ON i.product_id = p.id';
-        $where = [];
+        $joinCondition = 'i.product_id = p.id';
+        $groupBy = '';
+        $inventorySelect = 'i.sku, i.quantity, i.reorder_level, i.location, i.supplier_name';
         $params = [];
+
+        if ($locationId !== null) {
+            $joinCondition .= ' AND i.location_id = :join_location_id';
+            $params['join_location_id'] = $locationId;
+        } else {
+            $inventorySelect = 'MAX(i.sku) AS sku, COALESCE(SUM(i.quantity), 0) AS quantity,
+                MAX(i.reorder_level) AS reorder_level, MAX(i.location) AS location, MAX(i.supplier_name) AS supplier_name';
+            $groupBy = ' GROUP BY p.id';
+        }
+
+        $sql = "SELECT p.*, {$inventorySelect}
+                FROM products p
+                LEFT JOIN inventory i ON {$joinCondition}";
+        $where = [];
 
         if ($activeOnly) {
             $where[] = 'p.status = "active"';
@@ -56,29 +69,78 @@ class Product extends Model
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
-        $sql .= ' ORDER BY p.created_at DESC';
+        $sql .= $groupBy . ' ORDER BY p.created_at DESC';
 
         return $this->fetchAll($sql, $params);
     }
 
-    public function find(int $id): ?array
+    public function find(int $id, ?int $locationId = null): ?array
     {
-        $product = $this->fetch(
-            'SELECT p.*, i.sku, i.quantity, i.reorder_level, i.location, i.supplier_name
-             FROM products p
-             LEFT JOIN inventory i ON i.product_id = p.id
-             WHERE p.id = :id',
-            ['id' => $id]
-        );
+        if ($locationId !== null) {
+            $product = $this->fetch(
+                'SELECT p.*, i.sku, i.quantity, i.reorder_level, i.location, i.supplier_name
+                 FROM products p
+                 LEFT JOIN inventory i ON i.product_id = p.id AND i.location_id = :location_id
+                 WHERE p.id = :id',
+                ['id' => $id, 'location_id' => $locationId]
+            );
+        } else {
+            $product = $this->fetch(
+                'SELECT p.*, MAX(i.sku) AS sku, COALESCE(SUM(i.quantity), 0) AS quantity,
+                        MAX(i.reorder_level) AS reorder_level, MAX(i.location) AS location, MAX(i.supplier_name) AS supplier_name
+                 FROM products p
+                 LEFT JOIN inventory i ON i.product_id = p.id
+                 WHERE p.id = :id
+                 GROUP BY p.id',
+                ['id' => $id]
+            );
+        }
 
         if ($product) {
             $product['gallery_images'] = $this->images($id);
+            $product['stock_by_location'] = $this->stockByLocation($id);
         }
 
         return $product;
     }
 
-    public function create(array $data, int $userId): int
+    public function stockByLocation(int $productId): array
+    {
+        return $this->fetchAll(
+            'SELECT l.id AS location_id, l.name AS location_name, l.code AS location_code,
+                    i.id AS inventory_id, i.sku, i.quantity, i.reorder_level, i.location, i.supplier_name
+             FROM locations l
+             LEFT JOIN inventory i ON i.location_id = l.id AND i.product_id = :product_id
+             WHERE l.is_active = 1
+             ORDER BY l.name ASC',
+            ['product_id' => $productId]
+        );
+    }
+
+    public function updateStockForLocation(int $productId, int $locationId, array $data): bool
+    {
+        return $this->execute(
+            'INSERT INTO inventory (product_id, location_id, sku, quantity, reorder_level, location, supplier_name)
+             VALUES (:product_id, :location_id, :sku, :quantity, :reorder_level, :location_label, :supplier_name)
+             ON DUPLICATE KEY UPDATE
+                sku = VALUES(sku),
+                quantity = VALUES(quantity),
+                reorder_level = VALUES(reorder_level),
+                location = VALUES(location),
+                supplier_name = VALUES(supplier_name)',
+            [
+                'product_id' => $productId,
+                'location_id' => $locationId,
+                'sku' => ($data['sku'] ?? null) ?: $this->makeSku((string) ($data['product_name'] ?? ''), $productId),
+                'quantity' => max(0, (int) ($data['quantity'] ?? 0)),
+                'reorder_level' => max(0, (int) ($data['reorder_level'] ?? 5)),
+                'location_label' => ($data['location'] ?? null) ?: null,
+                'supplier_name' => ($data['supplier_name'] ?? null) ?: null,
+            ]
+        );
+    }
+
+    public function create(array $data, int $userId, ?int $stockingLocationId = null): int
     {
         $this->db->beginTransaction();
 
@@ -101,20 +163,27 @@ class Product extends Model
             ]);
 
             $productId = (int) $this->db->lastInsertId();
+            $sku = ($data['sku'] ?? null) ?: $this->makeSku($data['name'], $productId);
+
+            $locationIds = array_column($this->fetchAll('SELECT id FROM locations WHERE is_active = 1'), 'id');
+            $stockingLocationId ??= $locationIds[0] ?? null;
 
             $inventory = $this->db->prepare(
-                'INSERT INTO inventory (product_id, sku, quantity, reorder_level, location, supplier_name)
-                 VALUES (:product_id, :sku, :quantity, :reorder_level, :location, :supplier_name)'
+                'INSERT INTO inventory (product_id, location_id, sku, quantity, reorder_level, location, supplier_name)
+                 VALUES (:product_id, :location_id, :sku, :quantity, :reorder_level, :location, :supplier_name)'
             );
 
-            $inventory->execute([
-                'product_id' => $productId,
-                'sku' => ($data['sku'] ?? null) ?: $this->makeSku($data['name'], $productId),
-                'quantity' => (int) ($data['quantity'] ?? 0),
-                'reorder_level' => (int) ($data['reorder_level'] ?? 5),
-                'location' => $data['location'] ?? null,
-                'supplier_name' => $data['supplier_name'] ?? null,
-            ]);
+            foreach ($locationIds as $locationId) {
+                $inventory->execute([
+                    'product_id' => $productId,
+                    'location_id' => $locationId,
+                    'sku' => $sku,
+                    'quantity' => (int) $locationId === (int) $stockingLocationId ? (int) ($data['quantity'] ?? 0) : 0,
+                    'reorder_level' => (int) ($data['reorder_level'] ?? 5),
+                    'location' => $data['location'] ?? null,
+                    'supplier_name' => $data['supplier_name'] ?? null,
+                ]);
+            }
 
             $primaryImage = $this->syncGalleryImages($productId, $data);
             $this->execute(
@@ -156,22 +225,6 @@ class Product extends Model
                 'status' => $data['status'] ?? 'active',
             ]);
 
-            $inventory = $this->db->prepare(
-                'UPDATE inventory
-                 SET sku = :sku, quantity = :quantity, reorder_level = :reorder_level,
-                     location = :location, supplier_name = :supplier_name
-                 WHERE product_id = :product_id'
-            );
-
-            $inventory->execute([
-                'product_id' => $id,
-                'sku' => ($data['sku'] ?? null) ?: $this->makeSku($data['name'], $id),
-                'quantity' => (int) ($data['quantity'] ?? 0),
-                'reorder_level' => (int) ($data['reorder_level'] ?? 5),
-                'location' => $data['location'] ?? null,
-                'supplier_name' => $data['supplier_name'] ?? null,
-            ]);
-
             $primaryImage = $this->syncGalleryImages($id, $data);
             $this->execute(
                 'UPDATE products SET image = :image WHERE id = :id',
@@ -195,6 +248,18 @@ class Product extends Model
         );
     }
 
+    public function categories(int $limit = 8): array
+    {
+        return $this->fetchAll(
+            'SELECT MAX(p.category) AS name, COUNT(*) AS total
+             FROM products p
+             WHERE p.status = "active" AND p.category IS NOT NULL AND p.category != ""
+             GROUP BY LOWER(TRIM(p.category))
+             ORDER BY total DESC, name ASC
+             LIMIT ' . (int) $limit
+        );
+    }
+
     public function countActive(): int
     {
         $row = $this->fetch('SELECT COUNT(*) AS total FROM products WHERE status = "active"');
@@ -202,15 +267,24 @@ class Product extends Model
         return (int) $row['total'];
     }
 
-    public function lowStock(int $limit = 10): array
+    public function lowStock(int $limit = 10, ?int $locationId = null): array
     {
+        $params = [];
+        $where = 'i.quantity <= i.reorder_level';
+
+        if ($locationId !== null) {
+            $where .= ' AND i.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
         return $this->fetchAll(
             'SELECT p.name, p.brand, i.sku, i.quantity, i.reorder_level
              FROM inventory i
              INNER JOIN products p ON p.id = i.product_id
-             WHERE i.quantity <= i.reorder_level
+             WHERE ' . $where . '
              ORDER BY i.quantity ASC
-             LIMIT ' . (int) $limit
+             LIMIT ' . (int) $limit,
+            $params
         );
     }
 

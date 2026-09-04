@@ -12,29 +12,39 @@ class Inventory extends Model
         );
     }
 
-    public function findByProduct(int $productId): ?array
+    public function findByProduct(int $productId, int $locationId): ?array
     {
         return $this->fetch(
-            'SELECT * FROM inventory WHERE product_id = :product_id',
-            ['product_id' => $productId]
+            'SELECT * FROM inventory WHERE product_id = :product_id AND location_id = :location_id',
+            ['product_id' => $productId, 'location_id' => $locationId]
         );
     }
 
-    public function adjustStock(int $productId, int $quantityChange): bool
+    public function adjustStock(int $productId, int $locationId, int $quantityChange): bool
     {
         return $this->execute(
             'UPDATE inventory
              SET quantity = GREATEST(quantity + :quantity_change, 0)
-             WHERE product_id = :product_id',
+             WHERE product_id = :product_id AND location_id = :location_id',
             [
                 'product_id' => $productId,
+                'location_id' => $locationId,
                 'quantity_change' => $quantityChange,
             ]
         );
     }
 
-    public function totalUnits(): int
+    public function totalUnits(?int $locationId = null): int
     {
+        if ($locationId !== null) {
+            $row = $this->fetch(
+                'SELECT COALESCE(SUM(quantity), 0) AS total FROM inventory WHERE location_id = :location_id',
+                ['location_id' => $locationId]
+            );
+
+            return (int) $row['total'];
+        }
+
         $row = $this->fetch('SELECT COALESCE(SUM(quantity), 0) AS total FROM inventory');
 
         return (int) $row['total'];

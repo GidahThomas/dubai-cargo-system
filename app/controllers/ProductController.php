@@ -26,12 +26,14 @@ class ProductController extends Controller
             return;
         }
 
-        $products = (new Product())->all($filters, Auth::role() === 'customer');
+        $activeLocationId = $this->activeLocationId();
+        $products = (new Product())->all($filters, Auth::role() === 'customer', $activeLocationId);
 
         $this->view('products/index', [
             'pageTitle' => 'Products',
             'products' => $products,
             'filters' => $filters,
+            'activeLocation' => $activeLocationId !== null ? (new Location())->find($activeLocationId) : null,
         ]);
     }
 
@@ -94,7 +96,7 @@ class ProductController extends Controller
         }
 
         try {
-            $productId = (new Product())->create($data, Auth::id());
+            $productId = (new Product())->create($data, Auth::id(), $this->activeLocationId());
             (new AuditLog())->create(Auth::id(), 'product_created', 'products', $productId, $data['name']);
             flash('success', 'Product created successfully.');
             $this->redirect('products');
@@ -155,6 +157,34 @@ class ProductController extends Controller
         (new AuditLog())->create(Auth::id(), 'product_deactivated', 'products', $id);
         flash('success', 'Product marked as inactive.');
         $this->redirect('products');
+    }
+
+    public function updateStock(int $id): void
+    {
+        $this->requireRole(['manager', 'admin']);
+        $this->validateCsrf();
+
+        $locationId = (int) $this->post('location_id');
+
+        if ($locationId < 1) {
+            flash('error', 'Location is required.');
+            $this->redirect('products/edit/' . $id);
+        }
+
+        $product = (new Product())->find($id);
+
+        (new Product())->updateStockForLocation($id, $locationId, [
+            'product_name' => $product['name'] ?? '',
+            'sku' => $this->cleanString($this->post('sku')),
+            'quantity' => (int) $this->post('quantity', 0),
+            'reorder_level' => (int) $this->post('reorder_level', 5),
+            'location' => $this->cleanString($this->post('location_label')),
+            'supplier_name' => $this->cleanString($this->post('supplier_name')),
+        ]);
+
+        (new AuditLog())->create(Auth::id(), 'product_stock_updated', 'inventory', $id, 'Location #' . $locationId);
+        flash('success', 'Stock updated for that location.');
+        $this->redirect('products/edit/' . $id);
     }
 
     private function productPayload(?array $existing = null): array

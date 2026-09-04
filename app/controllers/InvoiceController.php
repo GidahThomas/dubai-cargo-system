@@ -169,6 +169,9 @@ class InvoiceController extends Controller
             'address' => $this->cleanString($this->post('address')),
             'phone' => $this->cleanString($this->post('phone')),
             'email' => strtolower($this->cleanString($this->post('email'))),
+            'support_email' => strtolower($this->cleanString($this->post('support_email'))),
+            'instagram_url' => $this->cleanString($this->post('instagram_url')),
+            'social_handle' => $this->cleanString($this->post('social_handle')),
             'tin' => $this->cleanString($this->post('tin')),
             'vrn' => $this->cleanString($this->post('vrn')),
             'vat_rate' => max(0, (float) $this->post('vat_rate', 0)),
@@ -192,7 +195,7 @@ class InvoiceController extends Controller
     {
         $this->requireAjaxRole(Invoice::ACCESS_ROLES);
 
-        $product = (new Invoice())->productPayload($productId);
+        $product = (new Invoice())->productPayload($productId, $this->activeLocationId());
 
         if (!$product) {
             $this->json(['success' => false, 'message' => 'Product not found.'], 404);

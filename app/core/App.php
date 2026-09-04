@@ -17,6 +17,7 @@ class App
         'users' => 'UserController',
         'quotations' => 'QuotationController',
         'deliveries' => 'DeliveryController',
+        'locations' => 'LocationController',
     ];
 
     private array $directRoutes = [

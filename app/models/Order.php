@@ -77,10 +77,17 @@ class Order extends Model
         );
     }
 
-    public function createFromProduct(int $userId, int $productId, int $quantity, string $shippingAddress, ?string $notes = null): int
+    public function createFromProduct(int $userId, int $productId, int $quantity, string $shippingAddress, ?string $notes = null, ?int $locationId = null): int
     {
         if ($quantity < 1) {
             throw new InvalidArgumentException('Quantity must be at least 1.');
+        }
+
+        $locationId ??= (new Invoice())->settings()['default_location_id'] ?? null;
+        $locationId = $locationId !== null ? (int) $locationId : null;
+
+        if (!$locationId) {
+            throw new RuntimeException('No fulfillment location is configured.');
         }
 
         $this->db->beginTransaction();
@@ -89,11 +96,11 @@ class Order extends Model
             $productStmt = $this->db->prepare(
                 'SELECT p.*, i.quantity AS stock
                  FROM products p
-                 INNER JOIN inventory i ON i.product_id = p.id
+                 INNER JOIN inventory i ON i.product_id = p.id AND i.location_id = :location_id
                  WHERE p.id = :id AND p.status = "active"
                  FOR UPDATE'
             );
-            $productStmt->execute(['id' => $productId]);
+            $productStmt->execute(['id' => $productId, 'location_id' => $locationId]);
             $product = $productStmt->fetch();
 
             if (!$product) {
@@ -108,12 +115,13 @@ class Order extends Model
             $orderNumber = $this->generateOrderNumber();
 
             $orderStmt = $this->db->prepare(
-                'INSERT INTO orders (order_number, user_id, status, total_amount, shipping_address, notes)
-                 VALUES (:order_number, :user_id, "pending", :total_amount, :shipping_address, :notes)'
+                'INSERT INTO orders (order_number, user_id, location_id, status, total_amount, shipping_address, notes)
+                 VALUES (:order_number, :user_id, :location_id, "pending", :total_amount, :shipping_address, :notes)'
             );
             $orderStmt->execute([
                 'order_number' => $orderNumber,
                 'user_id' => $userId,
+                'location_id' => $locationId,
                 'total_amount' => $lineTotal,
                 'shipping_address' => $shippingAddress,
                 'notes' => $notes,
@@ -134,11 +142,12 @@ class Order extends Model
             ]);
 
             $stockStmt = $this->db->prepare(
-                'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id'
+                'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id AND location_id = :location_id'
             );
             $stockStmt->execute([
                 'quantity' => $quantity,
                 'product_id' => $productId,
+                'location_id' => $locationId,
             ]);
 
             $paymentStmt = $this->db->prepare(
@@ -172,13 +181,15 @@ class Order extends Model
         $this->db->beginTransaction();
 
         try {
-            $sql = 'SELECT * FROM orders WHERE id = :id AND status = "pending" FOR UPDATE';
+            $sql = 'SELECT * FROM orders WHERE id = :id AND status = "pending"';
             $params = ['id' => $orderId];
 
             if ($userId !== null) {
                 $sql .= ' AND user_id = :user_id';
                 $params['user_id'] = $userId;
             }
+
+            $sql .= ' FOR UPDATE';
 
             $orderStmt = $this->db->prepare($sql);
             $orderStmt->execute($params);
@@ -190,14 +201,16 @@ class Order extends Model
             }
 
             $items = $this->items($orderId);
+            $locationId = (int) $order['location_id'];
 
             foreach ($items as $item) {
                 $restore = $this->db->prepare(
-                    'UPDATE inventory SET quantity = quantity + :quantity WHERE product_id = :product_id'
+                    'UPDATE inventory SET quantity = quantity + :quantity WHERE product_id = :product_id AND location_id = :location_id'
                 );
                 $restore->execute([
                     'quantity' => (int) $item['quantity'],
                     'product_id' => (int) $item['product_id'],
+                    'location_id' => $locationId,
                 ]);
             }
 
@@ -211,43 +224,66 @@ class Order extends Model
         }
     }
 
-    public function countByStatus(?string $status = null): int
+    public function countByStatus(?string $status = null, ?int $locationId = null): int
     {
-        if ($status === null) {
-            $row = $this->fetch('SELECT COUNT(*) AS total FROM orders');
-            return (int) $row['total'];
+        $where = [];
+        $params = [];
+
+        if ($status !== null) {
+            $where[] = 'status = :status';
+            $params['status'] = $status;
         }
 
-        $row = $this->fetch('SELECT COUNT(*) AS total FROM orders WHERE status = :status', [
-            'status' => $status,
-        ]);
+        if ($locationId !== null) {
+            $where[] = 'location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $sql = 'SELECT COUNT(*) AS total FROM orders';
+
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $row = $this->fetch($sql, $params);
 
         return (int) $row['total'];
     }
 
-    public function salesTotal(): float
+    public function salesTotal(?int $locationId = null): float
     {
-        $row = $this->fetch(
-            'SELECT COALESCE(SUM(o.total_amount), 0) AS total
-             FROM orders o
-             INNER JOIN payments p ON p.order_id = o.id
-             WHERE p.status = "confirmed"'
-        );
+        $sql = 'SELECT COALESCE(SUM(o.total_amount), 0) AS total
+                FROM orders o
+                INNER JOIN payments p ON p.order_id = o.id
+                WHERE p.status = "confirmed"';
+        $params = [];
+
+        if ($locationId !== null) {
+            $sql .= ' AND o.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $row = $this->fetch($sql, $params);
 
         return (float) $row['total'];
     }
 
-    public function monthlySales(): array
+    public function monthlySales(?int $locationId = null): array
     {
-        return $this->fetchAll(
-            'SELECT DATE_FORMAT(o.created_at, "%Y-%m") AS month, COALESCE(SUM(o.total_amount), 0) AS total
-             FROM orders o
-             INNER JOIN payments p ON p.order_id = o.id
-             WHERE p.status = "confirmed"
-             GROUP BY DATE_FORMAT(o.created_at, "%Y-%m")
-             ORDER BY month DESC
-             LIMIT 12'
-        );
+        $sql = 'SELECT DATE_FORMAT(o.created_at, "%Y-%m") AS month, COALESCE(SUM(o.total_amount), 0) AS total
+                FROM orders o
+                INNER JOIN payments p ON p.order_id = o.id
+                WHERE p.status = "confirmed"';
+        $params = [];
+
+        if ($locationId !== null) {
+            $sql .= ' AND o.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $sql .= ' GROUP BY DATE_FORMAT(o.created_at, "%Y-%m") ORDER BY month DESC LIMIT 12';
+
+        return $this->fetchAll($sql, $params);
     }
 
     public function salesSeries(string $group = 'daily'): array
@@ -270,26 +306,37 @@ class Order extends Model
         );
     }
 
-    public function statusCounts(): array
+    public function statusCounts(?int $locationId = null): array
     {
-        return $this->fetchAll(
-            'SELECT status AS label, COUNT(*) AS total
-             FROM orders
-             GROUP BY status
-             ORDER BY total DESC'
-        );
+        $sql = 'SELECT status AS label, COUNT(*) AS total FROM orders';
+        $params = [];
+
+        if ($locationId !== null) {
+            $sql .= ' WHERE location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $sql .= ' GROUP BY status ORDER BY total DESC';
+
+        return $this->fetchAll($sql, $params);
     }
 
-    public function recent(int $limit = 8): array
+    public function recent(int $limit = 8, ?int $locationId = null): array
     {
-        return $this->fetchAll(
-            'SELECT o.*, u.name AS customer_name, p.status AS payment_status
-             FROM orders o
-             INNER JOIN users u ON u.id = o.user_id
-             LEFT JOIN payments p ON p.order_id = o.id
-             ORDER BY o.created_at DESC
-             LIMIT ' . (int) $limit
-        );
+        $sql = 'SELECT o.*, u.name AS customer_name, p.status AS payment_status
+                FROM orders o
+                INNER JOIN users u ON u.id = o.user_id
+                LEFT JOIN payments p ON p.order_id = o.id';
+        $params = [];
+
+        if ($locationId !== null) {
+            $sql .= ' WHERE o.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $sql .= ' ORDER BY o.created_at DESC LIMIT ' . (int) $limit;
+
+        return $this->fetchAll($sql, $params);
     }
 
     private function generateOrderNumber(): string

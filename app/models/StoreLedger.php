@@ -2,7 +2,7 @@
 
 class StoreLedger extends Model
 {
-    public function recordStockEntry(array $data, int $userId): int
+    public function recordStockEntry(array $data, int $userId, int $locationId): int
     {
         $quantity = (int) $data['quantity'];
 
@@ -14,12 +14,13 @@ class StoreLedger extends Model
 
         try {
             $stmt = $this->db->prepare(
-                'INSERT INTO stock_entries (product_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
-                 VALUES (:product_id, :quantity, :unit_cost, :supplier_name, :received_date, :received_by, :notes)'
+                'INSERT INTO stock_entries (product_id, location_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
+                 VALUES (:product_id, :location_id, :quantity, :unit_cost, :supplier_name, :received_date, :received_by, :notes)'
             );
 
             $stmt->execute([
                 'product_id' => (int) $data['product_id'],
+                'location_id' => $locationId,
                 'quantity' => $quantity,
                 'unit_cost' => (float) ($data['unit_cost'] ?? 0),
                 'supplier_name' => ($data['supplier_name'] ?? null) ?: null,
@@ -31,11 +32,12 @@ class StoreLedger extends Model
             $entryId = (int) $this->db->lastInsertId();
 
             $stock = $this->db->prepare(
-                'UPDATE inventory SET quantity = quantity + :quantity WHERE product_id = :product_id'
+                'UPDATE inventory SET quantity = quantity + :quantity WHERE product_id = :product_id AND location_id = :location_id'
             );
             $stock->execute([
                 'quantity' => $quantity,
                 'product_id' => (int) $data['product_id'],
+                'location_id' => $locationId,
             ]);
 
             $this->db->commit();
@@ -47,7 +49,7 @@ class StoreLedger extends Model
         }
     }
 
-    public function recordSale(array $data, int $userId): int
+    public function recordSale(array $data, int $userId, int $locationId): int
     {
         $productId = (int) $data['product_id'];
         $quantity = (int) $data['quantity'];
@@ -63,11 +65,11 @@ class StoreLedger extends Model
             $productStmt = $this->db->prepare(
                 'SELECT p.name, i.quantity AS stock
                  FROM products p
-                 INNER JOIN inventory i ON i.product_id = p.id
+                 INNER JOIN inventory i ON i.product_id = p.id AND i.location_id = :location_id
                  WHERE p.id = :id AND p.status = "active"
                  FOR UPDATE'
             );
-            $productStmt->execute(['id' => $productId]);
+            $productStmt->execute(['id' => $productId, 'location_id' => $locationId]);
             $product = $productStmt->fetch();
 
             if (!$product) {
@@ -81,10 +83,11 @@ class StoreLedger extends Model
             $lineTotal = $quantity * $unitPrice;
 
             $saleStmt = $this->db->prepare(
-                'INSERT INTO store_sales (sale_number, customer_name, payment_method, total_amount, sale_date, sold_by, notes)
-                 VALUES (:sale_number, :customer_name, :payment_method, :total_amount, :sale_date, :sold_by, :notes)'
+                'INSERT INTO store_sales (location_id, sale_number, customer_name, payment_method, total_amount, sale_date, sold_by, notes)
+                 VALUES (:location_id, :sale_number, :customer_name, :payment_method, :total_amount, :sale_date, :sold_by, :notes)'
             );
             $saleStmt->execute([
+                'location_id' => $locationId,
                 'sale_number' => $this->generateSaleNumber(),
                 'customer_name' => ($data['customer_name'] ?? null) ?: 'Walk-in Customer',
                 'payment_method' => ($data['payment_method'] ?? null) ?: 'cash',
@@ -109,11 +112,12 @@ class StoreLedger extends Model
             ]);
 
             $stockStmt = $this->db->prepare(
-                'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id'
+                'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id AND location_id = :location_id'
             );
             $stockStmt->execute([
                 'quantity' => $quantity,
                 'product_id' => $productId,
+                'location_id' => $locationId,
             ]);
 
             $this->db->commit();
@@ -130,10 +134,11 @@ class StoreLedger extends Model
         [$start, $end] = $this->periodRange($period);
 
         return $this->fetchAll(
-            'SELECT se.*, p.name AS product_name, p.brand, i.sku, u.name AS received_by_name
+            'SELECT se.*, p.name AS product_name, p.brand,
+                    (SELECT i.sku FROM inventory i WHERE i.product_id = p.id LIMIT 1) AS sku,
+                    u.name AS received_by_name
              FROM stock_entries se
              INNER JOIN products p ON p.id = se.product_id
-             LEFT JOIN inventory i ON i.product_id = p.id
              LEFT JOIN users u ON u.id = se.received_by
              WHERE se.received_date BETWEEN :start_date AND :end_date
              ORDER BY se.received_date DESC, se.id DESC',
@@ -147,11 +152,12 @@ class StoreLedger extends Model
 
         return $this->fetchAll(
             'SELECT ss.*, ssi.quantity, ssi.unit_price, ssi.line_total,
-                    p.name AS product_name, p.brand, i.sku, u.name AS sold_by_name
+                    p.name AS product_name, p.brand,
+                    (SELECT i.sku FROM inventory i WHERE i.product_id = p.id LIMIT 1) AS sku,
+                    u.name AS sold_by_name
              FROM store_sales ss
              INNER JOIN store_sale_items ssi ON ssi.sale_id = ss.id
              INNER JOIN products p ON p.id = ssi.product_id
-             LEFT JOIN inventory i ON i.product_id = p.id
              LEFT JOIN users u ON u.id = ss.sold_by
              WHERE ss.sale_date BETWEEN :start_date AND :end_date
              ORDER BY ss.sale_date DESC, ss.id DESC',
@@ -159,27 +165,30 @@ class StoreLedger extends Model
         );
     }
 
-    public function summary(string $period = 'day'): array
+    public function summary(string $period = 'day', ?int $locationId = null): array
     {
         [$start, $end] = $this->periodRange($period);
 
-        $stock = $this->fetch(
-            'SELECT COALESCE(SUM(quantity), 0) AS units_in,
-                    COALESCE(SUM(quantity * unit_cost), 0) AS stock_cost
-             FROM stock_entries
-             WHERE received_date BETWEEN :start_date AND :end_date',
-            ['start_date' => $start, 'end_date' => $end]
-        );
+        $stockSql = 'SELECT COALESCE(SUM(quantity), 0) AS units_in,
+                            COALESCE(SUM(quantity * unit_cost), 0) AS stock_cost
+                     FROM stock_entries
+                     WHERE received_date BETWEEN :start_date AND :end_date';
+        $salesSql = 'SELECT COALESCE(SUM(ssi.quantity), 0) AS units_sold,
+                            COALESCE(SUM(ssi.line_total), 0) AS revenue,
+                            COUNT(DISTINCT ss.id) AS sale_count
+                     FROM store_sales ss
+                     INNER JOIN store_sale_items ssi ON ssi.sale_id = ss.id
+                     WHERE ss.sale_date BETWEEN :start_date AND :end_date';
+        $params = ['start_date' => $start, 'end_date' => $end];
 
-        $sales = $this->fetch(
-            'SELECT COALESCE(SUM(ssi.quantity), 0) AS units_sold,
-                    COALESCE(SUM(ssi.line_total), 0) AS revenue,
-                    COUNT(DISTINCT ss.id) AS sale_count
-             FROM store_sales ss
-             INNER JOIN store_sale_items ssi ON ssi.sale_id = ss.id
-             WHERE ss.sale_date BETWEEN :start_date AND :end_date',
-            ['start_date' => $start, 'end_date' => $end]
-        );
+        if ($locationId !== null) {
+            $stockSql .= ' AND location_id = :location_id';
+            $salesSql .= ' AND ss.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $stock = $this->fetch($stockSql, $params);
+        $sales = $this->fetch($salesSql, $params);
 
         return [
             'start_date' => $start,
@@ -192,22 +201,26 @@ class StoreLedger extends Model
         ];
     }
 
-    public function topSellingProducts(string $period = 'month'): array
+    public function topSellingProducts(string $period = 'month', ?int $locationId = null): array
     {
         [$start, $end] = $this->periodRange($period);
 
-        return $this->fetchAll(
-            'SELECT p.name, p.brand, COALESCE(SUM(ssi.quantity), 0) AS units_sold,
-                    COALESCE(SUM(ssi.line_total), 0) AS revenue
-             FROM store_sale_items ssi
-             INNER JOIN store_sales ss ON ss.id = ssi.sale_id
-             INNER JOIN products p ON p.id = ssi.product_id
-             WHERE ss.sale_date BETWEEN :start_date AND :end_date
-             GROUP BY p.id, p.name, p.brand
-             ORDER BY units_sold DESC, revenue DESC
-             LIMIT 10',
-            ['start_date' => $start, 'end_date' => $end]
-        );
+        $sql = 'SELECT p.name, p.brand, COALESCE(SUM(ssi.quantity), 0) AS units_sold,
+                       COALESCE(SUM(ssi.line_total), 0) AS revenue
+                FROM store_sale_items ssi
+                INNER JOIN store_sales ss ON ss.id = ssi.sale_id
+                INNER JOIN products p ON p.id = ssi.product_id
+                WHERE ss.sale_date BETWEEN :start_date AND :end_date';
+        $params = ['start_date' => $start, 'end_date' => $end];
+
+        if ($locationId !== null) {
+            $sql .= ' AND ss.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $sql .= ' GROUP BY p.id, p.name, p.brand ORDER BY units_sold DESC, revenue DESC LIMIT 10';
+
+        return $this->fetchAll($sql, $params);
     }
 
     public function periodRange(string $period): array
@@ -230,21 +243,21 @@ class StoreLedger extends Model
     public function transactions(array $filters = []): array
     {
         $stockSql = 'SELECT "stock_in" AS transaction_type, se.id, se.received_date AS transaction_date,
-                            p.name AS product_name, i.sku, se.quantity,
+                            p.name AS product_name,
+                            (SELECT i.sku FROM inventory i WHERE i.product_id = p.id LIMIT 1) AS sku, se.quantity,
                             se.unit_cost AS unit_amount, (se.quantity * se.unit_cost) AS total_amount,
                             se.supplier_name AS party_name, se.notes
                      FROM stock_entries se
-                     INNER JOIN products p ON p.id = se.product_id
-                     LEFT JOIN inventory i ON i.product_id = p.id';
+                     INNER JOIN products p ON p.id = se.product_id';
 
         $salesSql = 'SELECT "sale" AS transaction_type, ss.id, ss.sale_date AS transaction_date,
-                            p.name AS product_name, i.sku, ssi.quantity,
+                            p.name AS product_name,
+                            (SELECT i.sku FROM inventory i WHERE i.product_id = p.id LIMIT 1) AS sku, ssi.quantity,
                             ssi.unit_price AS unit_amount, ssi.line_total AS total_amount,
                             ss.customer_name AS party_name, ss.notes
                      FROM store_sales ss
                      INNER JOIN store_sale_items ssi ON ssi.sale_id = ss.id
-                     INNER JOIN products p ON p.id = ssi.product_id
-                     LEFT JOIN inventory i ON i.product_id = p.id';
+                     INNER JOIN products p ON p.id = ssi.product_id';
 
         $queries = [];
         $params = [];
@@ -271,7 +284,7 @@ class StoreLedger extends Model
         );
     }
 
-    public function chartSeries(string $group = 'daily'): array
+    public function chartSeries(string $group = 'daily', ?int $locationId = null): array
     {
         $format = match ($group) {
             'weekly' => '%x-W%v',
@@ -279,14 +292,20 @@ class StoreLedger extends Model
             default => '%Y-%m-%d',
         };
 
-        $rows = $this->fetchAll(
-            'SELECT DATE_FORMAT(ss.sale_date, "' . $format . '") AS label,
-                    COALESCE(SUM(ssi.line_total), 0) AS total
-             FROM store_sales ss
-             INNER JOIN store_sale_items ssi ON ssi.sale_id = ss.id
-             GROUP BY DATE_FORMAT(ss.sale_date, "' . $format . '")
-             ORDER BY label ASC'
-        );
+        $sql = 'SELECT DATE_FORMAT(ss.sale_date, "' . $format . '") AS label,
+                       COALESCE(SUM(ssi.line_total), 0) AS total
+                FROM store_sales ss
+                INNER JOIN store_sale_items ssi ON ssi.sale_id = ss.id';
+        $params = [];
+
+        if ($locationId !== null) {
+            $sql .= ' WHERE ss.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+
+        $sql .= ' GROUP BY DATE_FORMAT(ss.sale_date, "' . $format . '") ORDER BY label ASC';
+
+        $rows = $this->fetchAll($sql, $params);
 
         $totals = array_column($rows, 'total', 'label');
 

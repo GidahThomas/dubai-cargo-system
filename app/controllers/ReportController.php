@@ -7,19 +7,21 @@ class ReportController extends Controller
         $this->requireRole(['manager', 'admin']);
 
         $ledger = new StoreLedger();
+        $locationId = $this->activeLocationId();
         $recentSales = $ledger->transactions(['type' => 'sale']);
 
         $this->view('reports/index', [
             'pageTitle' => 'Reports',
-            'salesTotal' => (new Order())->salesTotal(),
-            'monthlySales' => (new Order())->monthlySales(),
-            'storeToday' => $ledger->summary('day'),
-            'storeWeek' => $ledger->summary('week'),
-            'storeMonth' => $ledger->summary('month'),
+            'activeLocation' => $locationId !== null ? (new Location())->find($locationId) : null,
+            'salesTotal' => (new Order())->salesTotal($locationId),
+            'monthlySales' => (new Order())->monthlySales($locationId),
+            'storeToday' => $ledger->summary('day', $locationId),
+            'storeWeek' => $ledger->summary('week', $locationId),
+            'storeMonth' => $ledger->summary('month', $locationId),
             'recentStoreSales' => array_slice($recentSales, 0, 12),
-            'topStoreProducts' => $ledger->topSellingProducts('month'),
-            'lowStock' => (new Product())->lowStock(20),
-            'inventoryUnits' => (new Inventory())->totalUnits(),
+            'topStoreProducts' => $ledger->topSellingProducts('month', $locationId),
+            'lowStock' => (new Product())->lowStock(20, $locationId),
+            'inventoryUnits' => (new Inventory())->totalUnits($locationId),
             'shipmentsByStatus' => (new Shipment())->reportByStatus(),
             'auditLogs' => Auth::role() === 'admin' ? (new AuditLog())->all() : [],
         ]);

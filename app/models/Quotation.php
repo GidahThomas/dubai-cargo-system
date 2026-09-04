@@ -195,10 +195,9 @@ class Quotation extends Model
     {
         return $this->fetchAll(
             'SELECT qi.*, p.name AS current_product_name, p.image AS current_product_image,
-                    i.quantity AS stock_available
+                    (SELECT COALESCE(SUM(i.quantity), 0) FROM inventory i WHERE i.product_id = qi.product_id) AS stock_available
              FROM quotation_items qi
              LEFT JOIN products p ON p.id = qi.product_id
-             LEFT JOIN inventory i ON i.product_id = qi.product_id
              WHERE qi.quotation_id = :quotation_id
              ORDER BY qi.id ASC',
             ['quotation_id' => $quotationId]

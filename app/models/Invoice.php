@@ -116,8 +116,8 @@ class Invoice extends Model
         }
 
         $this->execute(
-            'INSERT INTO invoice_settings (id, company_name, address, phone, email, currency_code, terms)
-             VALUES (1, "Dubai Computer Cargo", "Dar es Salaam, Tanzania / Deira, Dubai", "0749006994", "dubaicomputers14@14gmail.com", "TZS", "Payment is due on or before the invoice due date.")'
+            'INSERT INTO invoice_settings (id, company_name, address, phone, email, support_email, instagram_url, social_handle, currency_code, terms)
+             VALUES (1, "Dubai Computer Cargo", "Dar es Salaam, Tanzania / Deira, Dubai", "0749006994", "dubaicomputers14@14gmail.com", "dubaicomputers14@14gmail.com", "", "", "TZS", "Payment is due on or before the invoice due date.")'
         );
 
         return $this->fetch('SELECT * FROM invoice_settings WHERE id = 1');
@@ -127,10 +127,10 @@ class Invoice extends Model
     {
         return $this->execute(
             'INSERT INTO invoice_settings (
-                id, company_name, logo_path, address, phone, email, tin, vrn,
+                id, company_name, logo_path, address, phone, email, support_email, instagram_url, social_handle, tin, vrn,
                 vat_rate, currency_code, footer_note, terms, updated_by
              ) VALUES (
-                1, :company_name, :logo_path, :address, :phone, :email, :tin, :vrn,
+                1, :company_name, :logo_path, :address, :phone, :email, :support_email, :instagram_url, :social_handle, :tin, :vrn,
                 :vat_rate, :currency_code, :footer_note, :terms, :updated_by
              )
              ON DUPLICATE KEY UPDATE
@@ -139,6 +139,9 @@ class Invoice extends Model
                 address = VALUES(address),
                 phone = VALUES(phone),
                 email = VALUES(email),
+                support_email = VALUES(support_email),
+                instagram_url = VALUES(instagram_url),
+                social_handle = VALUES(social_handle),
                 tin = VALUES(tin),
                 vrn = VALUES(vrn),
                 vat_rate = VALUES(vat_rate),
@@ -152,6 +155,9 @@ class Invoice extends Model
                 'address' => $data['address'],
                 'phone' => $data['phone'],
                 'email' => $data['email'],
+                'support_email' => ($data['support_email'] ?? null) ?: $data['email'],
+                'instagram_url' => ($data['instagram_url'] ?? null) ?: null,
+                'social_handle' => ($data['social_handle'] ?? null) ?: null,
                 'tin' => ($data['tin'] ?? null) ?: null,
                 'vrn' => ($data['vrn'] ?? null) ?: null,
                 'vat_rate' => (float) $data['vat_rate'],
@@ -171,6 +177,14 @@ class Invoice extends Model
             throw new InvalidArgumentException('At least one invoice item is required.');
         }
 
+        $locationId = ($data['location_id'] ?? null) ?: ($this->settings()['default_location_id'] ?? null);
+
+        if (!$locationId) {
+            throw new RuntimeException('No fulfillment location is configured.');
+        }
+
+        $locationId = (int) $locationId;
+
         $this->db->beginTransaction();
 
         try {
@@ -187,7 +201,7 @@ class Invoice extends Model
 
             $stmt = $this->db->prepare(
                 'INSERT INTO invoices (
-                    invoice_number, customer_id, order_id, quotation_id,
+                    invoice_number, customer_id, order_id, location_id, quotation_id,
                     customer_name, customer_company, customer_phone, customer_email,
                     customer_address, customer_tin, customer_vrn,
                     delivery_full_name, delivery_phone, delivery_address, delivery_region,
@@ -196,7 +210,7 @@ class Invoice extends Model
                     invoice_date, due_date, subtotal, discount, vat, grand_total,
                     transport_cost, installation_cost, balance_due, status, created_by
                  ) VALUES (
-                    :invoice_number, :customer_id, :order_id, :quotation_id,
+                    :invoice_number, :customer_id, :order_id, :location_id, :quotation_id,
                     :customer_name, :customer_company, :customer_phone, :customer_email,
                     :customer_address, :customer_tin, :customer_vrn,
                     :delivery_full_name, :delivery_phone, :delivery_address, :delivery_region,
@@ -213,6 +227,7 @@ class Invoice extends Model
                 'invoice_number' => ($data['invoice_number'] ?? null) ?: $this->generateInvoiceNumber(),
                 'customer_id' => $customer['customer_id'],
                 'order_id' => ($data['order_id'] ?? null) ?: null,
+                'location_id' => $locationId,
                 'quotation_id' => ($data['quotation_id'] ?? null) ?: null,
                 'customer_name' => $customer['name'],
                 'customer_company' => $customer['company_name'],
@@ -276,7 +291,7 @@ class Invoice extends Model
             }
 
             if ($status !== 'draft' && $status !== 'cancelled' && empty($data['order_id'])) {
-                $this->adjustStockForInvoiceItems($invoiceId, $items, $createdBy);
+                $this->adjustStockForInvoiceItems($invoiceId, $items, $createdBy, $locationId);
             }
 
             $this->db->commit();
@@ -409,21 +424,23 @@ class Invoice extends Model
             }
 
             $items = $this->items($invoiceId);
+            $locationId = $invoice['location_id'] !== null ? (int) $invoice['location_id'] : null;
 
             foreach ($items as $item) {
                 $quantity = max(0, (int) ($item['quantity'] ?? 0));
                 $productId = (int) ($item['product_id'] ?? 0);
 
-                if ($productId > 0 && $quantity > 0) {
+                if ($productId > 0 && $quantity > 0 && $locationId !== null) {
                     $this->execute(
-                        'UPDATE inventory SET quantity = quantity + :quantity WHERE product_id = :product_id',
-                        ['quantity' => $quantity, 'product_id' => $productId]
+                        'UPDATE inventory SET quantity = quantity + :quantity WHERE product_id = :product_id AND location_id = :location_id',
+                        ['quantity' => $quantity, 'product_id' => $productId, 'location_id' => $locationId]
                     );
                     $this->execute(
-                        'INSERT INTO stock_entries (product_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
-                         VALUES (:product_id, :quantity, 0, "Invoice", CURRENT_DATE, NULL, :notes)',
+                        'INSERT INTO stock_entries (product_id, location_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
+                         VALUES (:product_id, :location_id, :quantity, 0, "Invoice", CURRENT_DATE, NULL, :notes)',
                         [
                             'product_id' => $productId,
+                            'location_id' => $locationId,
                             'quantity' => $quantity,
                             'notes' => 'Stock restored for cancelled invoice #' . $invoiceId,
                         ]
@@ -478,15 +495,26 @@ class Invoice extends Model
         );
     }
 
-    public function productPayload(int $productId): ?array
+    public function productPayload(int $productId, ?int $locationId = null): ?array
     {
-        $product = $this->fetch(
-            'SELECT p.*, i.quantity, i.sku
-             FROM products p
-             LEFT JOIN inventory i ON i.product_id = p.id
-             WHERE p.id = :id AND p.status = "active"',
-            ['id' => $productId]
-        );
+        if ($locationId !== null) {
+            $product = $this->fetch(
+                'SELECT p.*, i.quantity, i.sku
+                 FROM products p
+                 LEFT JOIN inventory i ON i.product_id = p.id AND i.location_id = :location_id
+                 WHERE p.id = :id AND p.status = "active"',
+                ['id' => $productId, 'location_id' => $locationId]
+            );
+        } else {
+            $product = $this->fetch(
+                'SELECT p.*, COALESCE(SUM(i.quantity), 0) AS quantity, MAX(i.sku) AS sku
+                 FROM products p
+                 LEFT JOIN inventory i ON i.product_id = p.id
+                 WHERE p.id = :id AND p.status = "active"
+                 GROUP BY p.id',
+                ['id' => $productId]
+            );
+        }
 
         if (!$product) {
             return null;
@@ -744,7 +772,7 @@ class Invoice extends Model
         ]);
     }
 
-    private function adjustStockForInvoiceItems(int $invoiceId, array $items, ?int $userId): void
+    private function adjustStockForInvoiceItems(int $invoiceId, array $items, ?int $userId, int $locationId): void
     {
         foreach ($items as $item) {
             $productId = (int) ($item['product_id'] ?? 0);
@@ -754,7 +782,10 @@ class Invoice extends Model
                 continue;
             }
 
-            $inventory = $this->fetch('SELECT quantity FROM inventory WHERE product_id = :product_id FOR UPDATE', ['product_id' => $productId]);
+            $inventory = $this->fetch(
+                'SELECT quantity FROM inventory WHERE product_id = :product_id AND location_id = :location_id FOR UPDATE',
+                ['product_id' => $productId, 'location_id' => $locationId]
+            );
 
             if (!$inventory) {
                 throw new RuntimeException('Inventory record was not found for the selected product.');
@@ -765,14 +796,15 @@ class Invoice extends Model
             }
 
             $this->execute(
-                'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id',
-                ['quantity' => $quantity, 'product_id' => $productId]
+                'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id AND location_id = :location_id',
+                ['quantity' => $quantity, 'product_id' => $productId, 'location_id' => $locationId]
             );
             $this->execute(
-                'INSERT INTO stock_entries (product_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
-                 VALUES (:product_id, :quantity, 0, "Invoice", CURRENT_DATE, :received_by, :notes)',
+                'INSERT INTO stock_entries (product_id, location_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
+                 VALUES (:product_id, :location_id, :quantity, 0, "Invoice", CURRENT_DATE, :received_by, :notes)',
                 [
                     'product_id' => $productId,
+                    'location_id' => $locationId,
                     'quantity' => -$quantity,
                     'received_by' => $userId,
                     'notes' => 'Stock reduction for invoice #' . $invoiceId,

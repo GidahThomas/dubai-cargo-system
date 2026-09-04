@@ -31,16 +31,17 @@ $navItems = [
     ['label' => 'Orders', 'icon' => 'bi-receipt', 'url' => 'orders', 'roles' => $staffRoles],
     ['label' => 'Payments', 'icon' => 'bi-credit-card', 'url' => 'payments', 'roles' => $staffRoles],
     ['label' => 'Shipments', 'icon' => 'bi-truck', 'url' => 'shipments', 'roles' => $staffRoles],
+    ['label' => 'Locations', 'icon' => 'bi-geo-alt', 'url' => 'locations', 'roles' => $staffRoles],
     ['label' => 'Reports', 'icon' => 'bi-bar-chart', 'url' => 'reports', 'roles' => $staffRoles],
     ['label' => 'Settings', 'icon' => 'bi-gear', 'url' => 'invoices/settings', 'roles' => $staffRoles],
 ];
 ?>
 <aside class="app-sidebar" id="appSidebar">
     <div class="sidebar-brand">
-        <img class="brand-logo" src="<?= h(asset(company_logo_path())) ?>" alt="<?= h(company_name()) ?> logo">
+        <img class="brand-logo" src="<?= h(public_url(company_logo_path())) ?>" alt="<?= h(company_name()) ?> logo">
         <div>
-            <strong>Dubai Computer</strong>
-            <small>Fast Cargo System</small>
+            <strong><?= h(company_name()) ?></strong>
+            <small>Business Management System</small>
         </div>
     </div>
 

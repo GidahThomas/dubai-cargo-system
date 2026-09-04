@@ -1,7 +1,7 @@
 <section class="public-page-heading">
-    <span class="public-kicker">Electronics catalogue</span>
+    <span class="public-kicker">Product catalogue</span>
     <h1>Products</h1>
-    <p>Browse available laptops, desktops, all-in-one PCs, gaming computers, workstations, printers, monitors, and accessories in Tanzanian shillings.</p>
+    <p>Browse our full range of available products, priced in <?= h(default_currency_code()) ?>.</p>
 </section>
 
 <section class="filter-panel public-filter-panel">
