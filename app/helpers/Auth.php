@@ -240,7 +240,7 @@ function company_settings(): array
 
 function company_name(): string
 {
-    return company_settings()['company_name'] ?: 'Dubai Computer Fast Cargo';
+    return company_settings()['company_name'] ?: 'Dubai Tech Plaza';
 }
 
 function company_logo_path(): string

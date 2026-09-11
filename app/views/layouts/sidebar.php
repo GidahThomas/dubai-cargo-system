@@ -37,14 +37,6 @@ $navItems = [
 ];
 ?>
 <aside class="app-sidebar" id="appSidebar">
-    <div class="sidebar-brand">
-        <img class="brand-logo" src="<?= h(public_url(company_logo_path())) ?>" alt="<?= h(company_name()) ?> logo">
-        <div>
-            <strong><?= h(company_name()) ?></strong>
-            <small>Business Management System</small>
-        </div>
-    </div>
-
     <div class="sidebar-user">
         <div class="avatar"><?= h(strtoupper(substr($user['name'] ?? 'U', 0, 1))) ?></div>
         <div>

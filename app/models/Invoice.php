@@ -117,7 +117,7 @@ class Invoice extends Model
 
         $this->execute(
             'INSERT INTO invoice_settings (id, company_name, address, phone, email, support_email, instagram_url, social_handle, currency_code, terms)
-             VALUES (1, "Dubai Computer Cargo", "Dar es Salaam, Tanzania / Deira, Dubai", "0749006994", "dubaicomputers14@14gmail.com", "dubaicomputers14@14gmail.com", "", "", "TZS", "Payment is due on or before the invoice due date.")'
+             VALUES (1, "Dubai Tech Plaza", "Dar es Salaam, Tanzania / Deira, Dubai", "0749006994", "dubaicomputers14@14gmail.com", "dubaicomputers14@14gmail.com", "", "", "TZS", "Payment is due on or before the invoice due date.")'
         );
 
         return $this->fetch('SELECT * FROM invoice_settings WHERE id = 1');

@@ -28,7 +28,7 @@ class LocationController extends Controller
             $locationId = (new Location())->create($data);
             $this->seedInventoryForNewLocation($locationId);
             (new AuditLog())->create(Auth::id(), 'location_created', 'locations', $locationId, $data['name']);
-            flash('success', 'Location added. Existing products now have a zero-stock row here — update quantities from the Products page.');
+            flash('success', 'Location added. Existing products now have a zero-stock row here. Update quantities from the Products page.');
         } catch (Throwable $exception) {
             flash('error', 'Could not create location: ' . $exception->getMessage());
         }

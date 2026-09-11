@@ -57,8 +57,8 @@ class Mailer
             $mail->Password = (string) ($_ENV['SMTP_PASSWORD'] ?? '');
             $mail->SMTPSecure = (string) ($_ENV['SMTP_SECURE'] ?? PHPMailer::ENCRYPTION_STARTTLS);
 
-            $fromEmail = (string) ($_ENV['SMTP_FROM_EMAIL'] ?? company_email());
-            $fromName = (string) ($_ENV['SMTP_FROM_NAME'] ?? company_name());
+            $fromEmail = trim((string) ($_ENV['SMTP_FROM_EMAIL'] ?? '')) ?: company_email();
+            $fromName = trim((string) ($_ENV['SMTP_FROM_NAME'] ?? '')) ?: company_name();
             $mail->setFrom($fromEmail, $fromName);
             $mail->addAddress($to);
 

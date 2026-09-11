@@ -6,8 +6,8 @@
                 <strong><?= h(company_name()) ?></strong>
                 <p>Fast, reliable cargo, invoice handling, and shipment tracking for modern businesses across Tanzania.</p>
                 <div class="public-footer-contact">
-                    <span>📞 <?= h(company_phone()) ?></span>
-                    <span>✉️ <?= h(customer_contact_email()) ?></span>
+                    <span><i class="bi bi-telephone"></i> <?= h(company_phone()) ?></span>
+                    <span><i class="bi bi-envelope"></i> <?= h(customer_contact_email()) ?></span>
                     <?php if (company_instagram_url()): ?>
                         <a href="<?= h(company_instagram_url()) ?>" target="_blank" rel="noopener">
                             <i class="bi bi-instagram"></i> <?= h(company_social_handle()) ?>

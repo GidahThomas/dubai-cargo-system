@@ -84,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
     wireProductCarousel();
     wireHomeProductSlider();
     wireScrollReveal();
-    wirePromoPopup();
     wireAjaxForms(csrfToken);
     wireNotifications(csrfToken);
     autoDismissFlash();
@@ -238,54 +237,6 @@ function wireScrollReveal() {
     }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
 
     revealItems.forEach((item) => observer.observe(item));
-}
-
-function wirePromoPopup() {
-    const overlay = document.querySelector('[data-promo-overlay]');
-
-    if (!overlay) {
-        return;
-    }
-
-    const closeBtn = overlay.querySelector('[data-promo-close]');
-    const storageKey = 'dcf_promo_seen';
-
-    const close = () => {
-        overlay.classList.remove('is-open');
-        document.body.classList.remove('promo-open');
-    };
-
-    const open = () => {
-        overlay.classList.add('is-open');
-        document.body.classList.add('promo-open');
-        window.sessionStorage.setItem(storageKey, '1');
-    };
-
-    let alreadySeen = false;
-    try {
-        alreadySeen = window.sessionStorage.getItem(storageKey) === '1';
-    } catch {
-        alreadySeen = false;
-    }
-
-    if (alreadySeen) {
-        overlay.remove();
-        return;
-    }
-
-    closeBtn?.addEventListener('click', close);
-    overlay.addEventListener('click', (event) => {
-        if (event.target === overlay) {
-            close();
-        }
-    });
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && overlay.classList.contains('is-open')) {
-            close();
-        }
-    });
-
-    window.setTimeout(open, 1400);
 }
 
 const doughnutCenterTextPlugin = {

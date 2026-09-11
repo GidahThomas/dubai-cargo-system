@@ -175,7 +175,7 @@ $heroCategories = array_slice($categories, 0, 4);
     <div class="home-cta-inner">
         <div class="home-cta-copy">
             <h2>Ready to place an order or request a custom quotation?</h2>
-            <p>Tell us what you need and where to deliver &mdash; we'll respond quickly.</p>
+            <p>Tell us what you need and where to deliver, and we'll respond quickly.</p>
         </div>
         <form class="home-cta-form" method="post" action="<?= h(url('contact')) ?>">
             <?= Auth::csrfField() ?>
@@ -198,21 +198,3 @@ $heroCategories = array_slice($categories, 0, 4);
     </div>
 </section>
 
-<div class="public-promo-overlay" data-promo-overlay>
-    <div class="public-promo-card" role="dialog" aria-modal="true" aria-labelledby="promoTitle">
-        <button class="public-promo-close" type="button" data-promo-close aria-label="Close">
-            <i class="bi bi-x-lg"></i>
-        </button>
-        <span class="public-promo-icon"><i class="bi bi-stars"></i></span>
-        <h3 id="promoTitle">Genuine Products, Trusted Sourcing</h3>
-        <p><?= h(company_name()) ?> ships fast, straight to you. Browse our latest stock or get in touch.</p>
-        <div class="public-promo-actions">
-            <a class="btn btn-primary" href="<?= h(url('products')) ?>">
-                <i class="bi bi-grid"></i> Browse Products
-            </a>
-            <a class="btn btn-outline-primary" href="<?= h(company_instagram_url() ?: url('contact')) ?>" target="_blank" rel="noopener">
-                <i class="bi bi-instagram"></i> Chat with Us
-            </a>
-        </div>
-    </div>
-</div>

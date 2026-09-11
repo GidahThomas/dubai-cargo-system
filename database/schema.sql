@@ -231,7 +231,7 @@ CREATE TABLE quotation_items (
 CREATE TABLE invoice_settings (
   id TINYINT UNSIGNED PRIMARY KEY DEFAULT 1,
   default_location_id INT UNSIGNED NULL,
-  company_name VARCHAR(180) NOT NULL DEFAULT 'Dubai Computer Cargo',
+  company_name VARCHAR(180) NOT NULL DEFAULT 'Dubai Tech Plaza',
   logo_path VARCHAR(255) NULL,
   address VARCHAR(255) NOT NULL DEFAULT 'Deira, Dubai, United Arab Emirates',
   phone VARCHAR(60) NOT NULL DEFAULT '0749006994',
@@ -599,7 +599,7 @@ INSERT INTO order_items (order_id, product_id, quantity, unit_price, line_total)
 (1, 1, 1, 1950000.00, 1950000.00);
 
 INSERT INTO invoice_settings (id, default_location_id, company_name, logo_path, address, phone, email, support_email, instagram_url, social_handle, tin, vrn, vat_rate, currency_code, terms, updated_by) VALUES
-(1, 1, 'Dubai Computer Cargo', NULL, 'Dar es Salaam, Tanzania / Deira, Dubai', '0749006994', 'dubaicomputers14@14gmail.com', 'gidamasaudathomas@gmail.com', 'https://www.instagram.com/dubai_computers/', '@dubai_computers', 'TIN-DCF-2026', 'VRN-DCF-2026', 0.00, 'TZS', 'Payment is due on or before the invoice due date. Goods remain company property until full payment is received. Customer support: gidamasaudathomas@gmail.com.', 1);
+(1, 1, 'Dubai Tech Plaza', NULL, 'Dar es Salaam, Tanzania / Deira, Dubai', '0749006994', 'dubaicomputers14@14gmail.com', 'gidamasaudathomas@gmail.com', 'https://www.instagram.com/dubai_computers/', '@dubai_computers', 'TIN-DCF-2026', 'VRN-DCF-2026', 0.00, 'TZS', 'Payment is due on or before the invoice due date. Goods remain company property until full payment is received. Customer support: gidamasaudathomas@gmail.com.', 1);
 
 INSERT INTO invoices (
   invoice_id, invoice_number, customer_id, order_id, location_id, customer_name, customer_company, customer_phone,
@@ -627,7 +627,7 @@ INSERT INTO store_sale_items (sale_id, product_id, quantity, unit_price, line_to
 (1, 4, 1, 180000.00, 180000.00);
 
 INSERT INTO shipments (order_id, tracking_number, status, origin, destination, carrier, expected_arrival, notes, created_by) VALUES
-(1, 'DCF-20260622-0001', 'in_transit', 'Dubai', 'Dar es Salaam', 'Dubai Fast Cargo', DATE_ADD(CURRENT_DATE, INTERVAL 14 DAY), 'Demo shipment already in transit.', 2);
+(1, 'DCF-20260622-0001', 'in_transit', 'Dubai', 'Dar es Salaam', 'Dubai Tech Plaza', DATE_ADD(CURRENT_DATE, INTERVAL 14 DAY), 'Demo shipment already in transit.', 2);
 
 INSERT INTO deliveries (
   quotation_id, invoice_id, customer_name, phone, address, region, district, ward,
@@ -640,7 +640,7 @@ INSERT INTO deliveries (
  'Call before delivery.', 'preparing', 'DEL-20260622-0001');
 
 INSERT INTO notifications (user_id, title, message, type) VALUES
-(3, 'Welcome to Dubai Computer Fast Cargo', 'Your customer account is ready. You can browse products, place orders, and track shipments.', 'success'),
+(3, 'Welcome to Dubai Tech Plaza', 'Your customer account is ready. You can browse products, place orders, and track shipments.', 'success'),
 (3, 'Shipment in transit', 'Tracking DCF-20260622-0001 is currently in transit.', 'info');
 
 INSERT INTO audit_logs (user_id, action, table_name, record_id, ip_address, user_agent, details) VALUES
