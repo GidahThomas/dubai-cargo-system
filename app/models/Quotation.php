@@ -94,7 +94,7 @@ class Quotation extends Model
             foreach ($data['items'] ?? [] as $item) {
                 $itemStmt->execute([
                     'quotation_id' => $quotationId,
-                    'product_id' => $item['product_id'] ?? null,
+                    'product_id' => $this->existingProductId($item['product_id'] ?? null),
                     'product_name' => $item['product_name'],
                     'product_image' => $item['product_image'] ?? null,
                     'quantity' => (int) ($item['quantity'] ?? 1),
@@ -171,7 +171,7 @@ class Quotation extends Model
             foreach ($data['items'] ?? [] as $item) {
                 $itemStmt->execute([
                     'quotation_id' => $id,
-                    'product_id' => $item['product_id'] ?? null,
+                    'product_id' => $this->existingProductId($item['product_id'] ?? null),
                     'product_name' => $item['product_name'],
                     'product_image' => $item['product_image'] ?? null,
                     'quantity' => (int) ($item['quantity'] ?? 1),
@@ -292,5 +292,18 @@ class Quotation extends Model
             $this->db->rollBack();
             throw $exception;
         }
+    }
+
+    // Items keep their name/price snapshot, so a missing or deleted product is stored as NULL
+    // instead of failing the foreign key.
+    private function existingProductId(mixed $productId): ?int
+    {
+        $productId = (int) $productId;
+
+        if ($productId < 1) {
+            return null;
+        }
+
+        return $this->fetch('SELECT id FROM products WHERE id = :id', ['id' => $productId]) ? $productId : null;
     }
 }

@@ -356,7 +356,7 @@ class StoreLedger extends Model
         $searchColumn = $source === 'stock' ? 'p.name' : 'p.name';
 
         if (!empty($filters['search'])) {
-            $where[] = '(' . $searchColumn . ' LIKE :' . $prefix . 'search_product OR i.sku LIKE :' . $prefix . 'search_sku)';
+            $where[] = '(' . $searchColumn . ' LIKE :' . $prefix . 'search_product OR EXISTS (SELECT 1 FROM inventory i WHERE i.product_id = p.id AND i.sku LIKE :' . $prefix . 'search_sku))';
             $params[$prefix . 'search_product'] = '%' . $filters['search'] . '%';
             $params[$prefix . 'search_sku'] = '%' . $filters['search'] . '%';
         }

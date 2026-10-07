@@ -65,20 +65,67 @@ class App
 
     private function call(string $controllerName, string $method, array $params = []): void
     {
-        if (!class_exists($controllerName)) {
+        if (!preg_match('/^[A-Za-z]+Controller$/', $controllerName)
+            || !class_exists($controllerName)
+            || !is_subclass_of($controllerName, 'Controller')) {
             http_response_code(404);
             echo 'Controller not found.';
             return;
         }
 
-        $controller = new $controllerName();
+        $arguments = $this->resolveArguments($controllerName, $method, $params);
 
-        if (!method_exists($controller, $method)) {
+        if ($arguments === null) {
             http_response_code(404);
             echo 'Page not found.';
             return;
         }
 
-        call_user_func_array([$controller, $method], $params);
+        $controller = new $controllerName();
+        $controller->{$method}(...$arguments);
+    }
+
+    /**
+     * Only public, non-static actions declared on the concrete controller are routable.
+     * Returns the coerced arguments, or null when the URL does not match the action signature.
+     */
+    private function resolveArguments(string $controllerName, string $method, array $params): ?array
+    {
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $method) || !method_exists($controllerName, $method)) {
+            return null;
+        }
+
+        $reflection = new ReflectionMethod($controllerName, $method);
+
+        if (!$reflection->isPublic()
+            || $reflection->isStatic()
+            || $reflection->isConstructor()
+            || $reflection->getDeclaringClass()->getName() === 'Controller') {
+            return null;
+        }
+
+        $parameters = $reflection->getParameters();
+
+        if (count($params) < $reflection->getNumberOfRequiredParameters() || count($params) > count($parameters)) {
+            return null;
+        }
+
+        $arguments = [];
+
+        foreach ($params as $index => $value) {
+            $type = $parameters[$index]->getType();
+            $typeName = $type instanceof ReflectionNamedType ? $type->getName() : null;
+
+            if ($typeName === 'int') {
+                if (!ctype_digit((string) $value)) {
+                    return null;
+                }
+                $value = (int) $value;
+            }
+
+            $arguments[] = $value;
+        }
+
+        return $arguments;
     }
 }
