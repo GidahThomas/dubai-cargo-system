@@ -44,7 +44,7 @@ class OrderController extends Controller
             $orderId = (new Order())->createFromProduct(Auth::id(), $productId, $quantity, $address, $notes);
             $order = (new Order())->find($orderId);
 
-            $this->notifyRoles(['manager', 'admin'], 'New order placed', 'Order ' . $order['order_number'] . ' is waiting for review.', 'info');
+            (new Notification())->notifyRoles(['manager', 'admin'], 'New order placed', 'Order ' . $order['order_number'] . ' is waiting for review.', 'info');
             (new AuditLog())->create(Auth::id(), 'order_created', 'orders', $orderId, $order['order_number']);
 
             flash('success', 'Order placed successfully. Please submit your payment reference.');
@@ -132,14 +132,5 @@ class OrderController extends Controller
         }
 
         $this->redirect('orders');
-    }
-
-    private function notifyRoles(array $roles, string $title, string $message, string $type): void
-    {
-        $notification = new Notification();
-
-        foreach ((new User())->byRoles($roles) as $user) {
-            $notification->create((int) $user['id'], $title, $message, $type);
-        }
     }
 }

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        # Same major version as XAMPP's MariaDB, so the SQL behaves the same as on the shop server.
+        image: mariadb:10.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring, curl, zlib
+          coverage: none
+
+      - name: Syntax check every PHP file
+        run: |
+          errors=$(find . -name '*.php' -not -path './lib/*' -not -path './vendor/*' -print0 \
+            | xargs -0 -n1 php -l 2>&1 | grep -v '^No syntax errors' || true)
+          if [ -n "$errors" ]; then echo "$errors"; exit 1; fi
+
+      - name: Configure environment
+        run: |
+          cp .env.example .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/; s/^DB_PASS=.*/DB_PASS=root/' .env
+
+      - name: Run tests (builds a fresh test database from schema.sql + migrations)
+        run: php tests/run.php

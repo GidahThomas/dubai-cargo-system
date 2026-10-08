@@ -105,6 +105,39 @@
                 <?php if (Auth::role() === 'customer' && $payment['status'] !== 'confirmed'): ?>
                     <tr class="collapse" id="payment<?= (int) $payment['id'] ?>">
                         <td colspan="7" class="bg-light">
+                            <?php if (AzamPay::isEnabled() && !empty($payment['order_id'])): ?>
+                                <?php $lastRequest = AzamPay::latestRequest((int) $payment['id']); ?>
+                                <form method="post" action="<?= h(url('payments/mobileMoney')) ?>" class="row g-2 align-items-end mb-3 pb-3 border-bottom needs-validation" novalidate>
+                                    <?= Auth::csrfField() ?>
+                                    <input type="hidden" name="payment_id" value="<?= (int) $payment['id'] ?>">
+                                    <div class="col-12">
+                                        <strong><i class="bi bi-phone"></i> Pay <?= h(money($payment['amount'])) ?> with mobile money</strong>
+                                        <small class="text-muted d-block">You'll get a PIN prompt on your phone; the payment confirms automatically.</small>
+                                        <?php if ($lastRequest): ?>
+                                            <small class="d-block mt-1 <?= $lastRequest['status'] === 'failed' ? 'text-danger' : 'text-muted' ?>">
+                                                Last request <?= h(date('M j H:i', strtotime($lastRequest['created_at']))) ?> to +<?= h($lastRequest['msisdn']) ?>:
+                                                <?= h(['requested' => 'waiting for your approval', 'success' => 'paid', 'failed' => 'not completed'][$lastRequest['status']] ?? $lastRequest['status']) ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Network</label>
+                                        <select class="form-select" name="provider" required>
+                                            <?php foreach (AzamPay::PROVIDERS as $code => $label): ?>
+                                                <option value="<?= h($code) ?>"><?= h($label) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">Phone number</label>
+                                        <input class="form-control" name="phone" type="tel" value="<?= h(Auth::user()['phone'] ?? '') ?>" placeholder="e.g. 0754 123 456" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button class="btn btn-success w-100" type="submit"><i class="bi bi-phone-vibrate me-1"></i>Send prompt</button>
+                                    </div>
+                                </form>
+                                <small class="text-muted d-block mb-2">Or enter a payment you already made:</small>
+                            <?php endif; ?>
                             <form method="post" action="<?= h(url('payments/submit')) ?>" class="row g-2 align-items-end needs-validation" novalidate>
                                 <?= Auth::csrfField() ?>
                                 <input type="hidden" name="payment_id" value="<?= (int) $payment['id'] ?>">

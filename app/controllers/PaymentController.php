@@ -46,10 +46,37 @@ class PaymentController extends Controller
             'notes' => $this->cleanString($this->post('notes')),
         ]);
 
-        $this->notifyRoles(['manager', 'admin'], 'Payment submitted', 'A customer payment reference is ready for review.', 'warning');
+        (new Notification())->notifyRoles(['manager', 'admin'], 'Payment submitted', 'A customer payment reference is ready for review.', 'warning');
         (new AuditLog())->create(Auth::id(), 'payment_submitted', 'payments', $paymentId, $reference);
 
         flash('success', 'Payment submitted for review.');
+        $this->redirect('payments');
+    }
+
+    /**
+     * Customer: send a mobile-money PIN prompt to their phone through AzamPay.
+     */
+    public function mobileMoney(): void
+    {
+        $this->requireRole('customer');
+        $this->validateCsrf();
+
+        $payment = (new Payment())->find((int) $this->post('payment_id'));
+
+        if (!$payment || (int) ($payment['user_id'] ?? 0) !== (int) Auth::id() || $payment['status'] === 'confirmed') {
+            flash('error', 'That payment cannot be paid online.');
+            $this->redirect('payments');
+        }
+
+        $externalId = AzamPay::requestPayment($payment, (string) $this->post('phone'), (string) $this->post('provider'));
+
+        if ($externalId === null) {
+            flash('error', 'Mobile-money request failed: ' . AzamPay::$lastError);
+            $this->redirect('payments');
+        }
+
+        (new AuditLog())->create(Auth::id(), 'payment_mobile_money_requested', 'payments', (int) $payment['id'], $externalId);
+        flash('success', 'Check your phone and enter your PIN to approve ' . money($payment['amount']) . '. The payment confirms automatically once approved.');
         $this->redirect('payments');
     }
 
@@ -128,14 +155,5 @@ class PaymentController extends Controller
 
         flash('success', 'Payment ' . $status . '.');
         $this->redirect('payments');
-    }
-
-    private function notifyRoles(array $roles, string $title, string $message, string $type): void
-    {
-        $notification = new Notification();
-
-        foreach ((new User())->byRoles($roles) as $user) {
-            $notification->create((int) $user['id'], $title, $message, $type);
-        }
     }
 }

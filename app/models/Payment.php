@@ -107,7 +107,10 @@ class Payment extends Model
         );
     }
 
-    public function updateStatus(int $paymentId, string $status, int $confirmedBy, ?string $notes = null): bool
+    /**
+     * @param int|null $confirmedBy the staff member, or null when a payment gateway confirmed it
+     */
+    public function updateStatus(int $paymentId, string $status, ?int $confirmedBy, ?string $notes = null): bool
     {
         $this->db->beginTransaction();
 

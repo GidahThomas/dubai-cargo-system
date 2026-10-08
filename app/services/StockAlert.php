@@ -53,10 +53,7 @@ class StockAlert
                 (int) $row['reorder_level']
             );
 
-            $notification = new Notification();
-            foreach ((new User())->byRoles(self::ALERT_ROLES) as $user) {
-                $notification->create((int) $user['id'], $quantity === 0 ? 'Out of stock' : 'Low stock', $message, $quantity === 0 ? 'danger' : 'warning');
-            }
+            (new Notification())->notifyRoles(self::ALERT_ROLES, $quantity === 0 ? 'Out of stock' : 'Low stock', $message, $quantity === 0 ? 'danger' : 'warning');
         } catch (Throwable $exception) {
             // An alert must never block a sale.
             error_log('StockAlert: ' . $exception->getMessage());

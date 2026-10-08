@@ -100,9 +100,7 @@ class CartController extends Controller
 
         $_SESSION['cart'] = [];
 
-        foreach ((new User())->byRoles(['manager', 'admin']) as $staff) {
-            (new Notification())->create((int) $staff['id'], 'New order placed', 'Order ' . $order['order_number'] . ' is waiting for review.', 'info');
-        }
+        (new Notification())->notifyRoles(['manager', 'admin'], 'New order placed', 'Order ' . $order['order_number'] . ' is waiting for review.', 'info');
         (new AuditLog())->create(Auth::id(), 'order_created', 'orders', $orderId, $order['order_number']);
 
         flash('success', 'Order ' . $order['order_number'] . ' placed. Next, submit your payment on the Payments page.');

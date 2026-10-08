@@ -24,6 +24,16 @@ class Notification extends Model
         return $created;
     }
 
+    /**
+     * Sends the same notification to every active user with one of the given roles.
+     */
+    public function notifyRoles(array $roles, string $title, string $message, string $type = 'info'): void
+    {
+        foreach ((new User())->byRoles($roles) as $user) {
+            $this->create((int) $user['id'], $title, $message, $type);
+        }
+    }
+
     public function forUser(int $userId, int $limit = 10): array
     {
         return $this->fetchAll(
