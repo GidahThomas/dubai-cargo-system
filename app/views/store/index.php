@@ -101,10 +101,16 @@ $periodLabels = [
                 <?= Auth::csrfField() ?>
                 <div class="col-md-6">
                     <label class="form-label" for="stock_product_id">Bidhaa</label>
+                    <div class="barcode-scan" data-barcode-scan="stock_product_id">
+                        <i class="bi bi-upc-scan" aria-hidden="true"></i>
+                        <input class="form-control form-control-sm" type="text" inputmode="text" autocomplete="off" placeholder="Scan barcode / andika SKU, kisha Enter" aria-label="Scan barcode or type SKU" data-barcode-input>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-barcode-camera hidden title="Scan with camera"><i class="bi bi-camera"></i></button>
+                    </div>
+                    <small class="barcode-feedback" data-barcode-feedback></small>
                     <select class="form-select" id="stock_product_id" name="product_id" required>
                         <option value="">Chagua bidhaa</option>
                         <?php foreach ($products as $product): ?>
-                            <option value="<?= (int) $product['id'] ?>">
+                            <option value="<?= (int) $product['id'] ?>" data-sku="<?= h($product['sku'] ?? '') ?>">
                                 <?= h($product['name']) ?> / Stock: <?= (int) $product['quantity'] ?>
                             </option>
                         <?php endforeach; ?>
@@ -148,10 +154,16 @@ $periodLabels = [
                 <?= Auth::csrfField() ?>
                 <div class="col-md-6">
                     <label class="form-label" for="sale_product_id">Bidhaa</label>
+                    <div class="barcode-scan" data-barcode-scan="sale_product_id">
+                        <i class="bi bi-upc-scan" aria-hidden="true"></i>
+                        <input class="form-control form-control-sm" type="text" inputmode="text" autocomplete="off" placeholder="Scan barcode / andika SKU, kisha Enter" aria-label="Scan barcode or type SKU" data-barcode-input>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-barcode-camera hidden title="Scan with camera"><i class="bi bi-camera"></i></button>
+                    </div>
+                    <small class="barcode-feedback" data-barcode-feedback></small>
                     <select class="form-select" id="sale_product_id" name="product_id" required>
                         <option value="">Chagua bidhaa</option>
                         <?php foreach ($products as $product): ?>
-                            <option value="<?= (int) $product['id'] ?>" data-price="<?= h($product['price']) ?>">
+                            <option value="<?= (int) $product['id'] ?>" data-sku="<?= h($product['sku'] ?? '') ?>" data-price="<?= h($product['price']) ?>">
                                 <?= h($product['name']) ?> / Stock: <?= (int) $product['quantity'] ?>
                             </option>
                         <?php endforeach; ?>

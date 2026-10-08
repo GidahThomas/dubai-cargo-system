@@ -1,435 +1,112 @@
-# 📦 Dubai Cargo System
+# Dubai Computer Fast Cargo — Retail and Cargo Management System
 
-**Intelligent Cargo Management & Logistics Platform**
+Web system for an electronics importer and retailer (trading as **Dubai Tech Plaza**): catalogue and online orders, stock per branch, payments (including mobile money), invoices and quotations, nine-stage cargo tracking, deliveries, customer notifications (in-app, WhatsApp, SMS), reports and an audit trail.
 
-> A comprehensive web-based solution for managing cargo shipments, tracking deliveries, and optimizing logistics operations in the Dubai region with real-time monitoring and reporting capabilities.
-
----
-
-## 🎯 Project Overview
-
-Dubai Cargo System is a modern logistics management platform designed to streamline cargo handling, shipment tracking, and delivery operations. Built with PHP and modern web technologies, it provides an integrated solution for cargo companies to manage their entire operational workflow.
-
-### Core Objectives
-- Centralize cargo shipment management
-- Real-time shipment tracking and monitoring
-- Optimize delivery routes and scheduling
-- Automate cargo documentation and billing
-- Enhance customer communication and transparency
-- Generate detailed logistics analytics and reports
+PHP 8.2 · MariaDB/MySQL · Bootstrap 5.3 · runs on XAMPP (Apache) — no framework, no build step.
 
 ---
 
-## ✨ Key Features
+## Roles
 
-### 📦 Cargo Management
-- Create and manage shipments
-- Track cargo from origin to destination
-- Assign cargo to delivery vehicles
-- Monitor cargo status in real-time
-- Generate shipping labels and documents
-- Support for multiple cargo types
-
-### 🚚 Delivery Management
-- Route optimization and planning
-- Driver assignment and scheduling
-- Real-time GPS tracking
-- Delivery confirmations
-- Proof of delivery (POD)
-- Multiple drop-off locations
-
-### 📋 Shipment Tracking
-- Live tracking dashboard
-- Shipment history and archive
-- Customer tracking portal
-- Automated status notifications
-- Delay alerts and escalations
-- Detailed shipment timeline
-
-### 💳 Billing & Invoicing
-- Automated bill generation
-- Multiple payment methods
-- Invoice management
-- Rate calculation
-- Service charge tracking
-- Financial reporting
-
-### 📊 Analytics & Reporting
-- Delivery performance metrics
-- Revenue analysis
-- Fleet utilization reports
-- Cost optimization insights
-- Custom report generation
-- Data export (CSV, PDF)
-
-### 👥 User Management
-- Role-based access control (RBAC)
-- Multi-user support
-- Admin dashboard
-- Driver management
-- Customer accounts
-- Activity logging
+| Role | What they do |
+| --- | --- |
+| Visitor | Browse the catalogue and Instagram gallery, request a quotation or invoice, track a shipment, chat on WhatsApp, register |
+| Customer | Cart and checkout, pay (mobile money or reference), orders, tracking timeline, notifications, profile |
+| Manager | Products and stock, orders, payments, invoices, quotations, shipments, deliveries, counter sales, reports, message log, Instagram import |
+| Admin (owner) | Everything a manager does, plus users, settings and Audit Review |
 
 ---
 
-## 🛠️ Technology Stack
+## Setup (new machine)
 
-### Backend
-- **Language:** PHP 7.4+
-- **Framework:** Custom MVC / Laravel
-- **Database:** MySQL
-- **Server:** Apache/Nginx
-- **API:** RESTful Architecture
+1. Copy the project into `C:\xampp\htdocs\dubai-cargo-system` and start Apache and MySQL in XAMPP.
+2. Create the database: import `database/schema.sql` (or `database/schema_hosting.sql` on shared hosting).
+3. Configure: copy `.env.example` to `.env` and fill in the values you need (see below).
+4. Apply migrations: `C:\xampp\php\php.exe tools\migrate.php`
+5. Schedule background jobs (once): `powershell -ExecutionPolicy Bypass -File tools\schedule_tasks.ps1`
+6. Set real passwords for the seeded accounts:
+   `C:\xampp\php\php.exe tools\set_password.php admin@dubai-fast-cargo.test` (prints a strong password).
+   The seed data ships with a well-known demo password — never leave it in place.
+7. Open `http://localhost/dubai-cargo-system/`.
 
-### Frontend
-- **HTML5** - Semantic markup
-- **CSS3** - Responsive styling
-- **JavaScript** - Dynamic interactions
-- **Bootstrap** - UI framework
-- **jQuery** - DOM manipulation
-
-### Infrastructure
-- **Database:** MySQL 5.7+
-- **Version Control:** Git
-- **Authentication:** Session-based / JWT
-- **File Storage:** Local filesystem
-- **Email:** SMTP integration
+The root `.htaccess` only lets the web reach `public/`. On a real server, point the site's document root at `public/` instead.
 
 ---
 
-## 📋 System Architecture
+## Configuration (`.env`)
+
+| Setting | Purpose |
+| --- | --- |
+| `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` | Database connection |
+| `APP_DEBUG` | `true` shows technical error details; keep `false` anywhere others can reach |
+| `SMTP_*` | Outgoing email (falls back to PHP `mail()`) |
+| `ERROR_ALERT_EMAIL` | Emails the owner when an error happens (max once per 30 min per error) |
+| `FORCE_HTTPS`, `TRUST_PROXY` | Redirect to HTTPS and send HSTS once an SSL certificate is installed |
+| `WHATSAPP_NUMBER`, `WHATSAPP_COUNTRY_CODE` | Chat buttons and links (default: company phone, +255) |
+| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TEMPLATE` | Automatic WhatsApp updates (Meta Cloud API) |
+| `SMS_PROVIDER`, `SMS_*` | Automatic SMS updates via Africa's Talking or Beem |
+| `AZAMPAY_*` | Mobile-money payments (M-Pesa, Tigo Pesa, Airtel Money, HaloPesa) |
+| `BACKUP_DIR`, `BACKUP_KEEP`, `BACKUP_COPY_DIR`, `MYSQL_BIN_DIR` | Backups and their off-machine copy |
+| `DB_TEST_NAME` | Database the tests rebuild (default `<DB_NAME>_test`) |
+
+Every external service is optional and switched off until its keys are set.
+
+---
+
+## Background jobs (Windows Task Scheduler)
+
+| Task | When | Does |
+| --- | --- | --- |
+| `DubaiCargo\SendMessages` | every minute | Sends queued WhatsApp/SMS messages, retrying failures (1, 5, 15, 60, 240 min) |
+| `DubaiCargo\DailyBackup` | 02:00 daily | Database dump + uploads archive, keeps 14, optional copy to `BACKUP_COPY_DIR` |
+| `DubaiCargo\Thumbnails` | every 30 min | Small WebP copies of product and gallery photos |
+
+---
+
+## Command-line tools (`tools/`)
 
 ```
-Dubai Cargo System
-│
-├── Frontend Layer
-│   ├── Admin Dashboard
-│   ├── Driver Portal
-│   ├── Customer Tracking
-│   └── Reporting Dashboard
-│
-├── API Layer
-│   ├── Authentication
-│   ├── Shipment Management
-│   ├── Tracking Service
-│   ├── Billing Engine
-│   └── Notification Service
-│
-├── Business Logic
-│   ├── Route Optimization
-│   ├── Cargo Processing
-│   ├── Payment Processing
-│   ├── Document Generation
-│   └── Report Engine
-│
-└── Data Layer
-    ├── MySQL Database
-    ├── File Storage
-    ├── Cache Layer
-    └── Log Storage
+C:\xampp\php\php.exe tools\migrate.php [status]          apply / list database migrations
+C:\xampp\php\php.exe tools\backup.php [verify]           back up now / test-restore the newest backup
+C:\xampp\php\php.exe tools\set_password.php <email> [pw] reset a password (generates one if omitted)
+C:\xampp\php\php.exe tools\send_messages.php             send queued messages now
+C:\xampp\php\php.exe -d extension=gd tools\make_thumbnails.php
+C:\xampp\php\php.exe tools\import_instagram.php [folder] import an Instagram data export
 ```
+
+These scripts refuse to run from a browser.
 
 ---
 
-## 🚀 Getting Started
+## Database changes
 
-### Prerequisites
-- PHP 7.4 or higher
-- MySQL 5.7 or higher
-- Composer
-- Git
-- Node.js (optional, for frontend build)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/GidahThomas/dubai-cargo-system.git
-cd dubai-cargo-system
-
-# Install PHP dependencies
-composer install
-
-# Copy environment file
-cp .env.example .env
-
-# Configure database in .env
-# Update DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD
-
-# Run database migrations
-php artisan migrate  # or custom migration script
-
-# Install frontend dependencies (if using npm)
-npm install
-
-# Start development server
-php artisan serve
-```
-
-### Environment Configuration
-
-Update your `.env` file with your database and API credentials:
-
-```env
-APP_NAME=Dubai_Cargo_System
-APP_ENV=development
-APP_DEBUG=true
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=cargo_system
-DB_USERNAME=root
-DB_PASSWORD=password
-
-# Email Configuration
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your_email@gmail.com
-MAIL_PASSWORD=your_app_password
-
-# Third-party Services (optional)
-GPS_API_KEY=your_api_key
-NOTIFICATION_SERVICE=twilio  # or custom
-```
+`database/schema.sql` is the base. Every later change is a numbered file in `database/migrations/`, applied by `tools/migrate.php` and recorded in the `schema_migrations` table. To change the database, add a new file (`YYYY_MM_DD_NN_description.sql`, no `USE` statement, safe to re-run) — never edit one that has already been applied. `database/legacy/` holds old scripts already included in `schema.sql`.
 
 ---
 
-## 📚 API Endpoints
+## Tests
 
-### Shipment Management
 ```
-GET    /api/shipments              - List all shipments
-POST   /api/shipments              - Create new shipment
-GET    /api/shipments/{id}         - Get shipment details
-PUT    /api/shipments/{id}         - Update shipment
-DELETE /api/shipments/{id}         - Cancel shipment
-GET    /api/shipments/search       - Search shipments
+C:\xampp\php\php.exe tests\run.php
 ```
 
-### Tracking
-```
-GET    /api/track/{tracking_id}    - Track shipment
-GET    /api/shipments/{id}/history - Shipment history
-GET    /api/shipments/{id}/status  - Current status
-```
-
-### Delivery & Routes
-```
-GET    /api/routes                 - List routes
-POST   /api/routes                 - Create route
-GET    /api/deliveries             - List deliveries
-PUT    /api/deliveries/{id}        - Update delivery status
-POST   /api/deliveries/{id}/proof  - Upload proof of delivery
-```
-
-### Billing
-```
-GET    /api/invoices               - List invoices
-POST   /api/invoices               - Generate invoice
-GET    /api/invoices/{id}          - Get invoice details
-POST   /api/payments               - Record payment
-GET    /api/payments               - Payment history
-```
-
-### Users & Access
-```
-POST   /api/auth/login             - User login
-POST   /api/auth/logout            - User logout
-GET    /api/users                  - List users (admin)
-POST   /api/users                  - Create user (admin)
-GET    /api/profile                - Current user profile
-PUT    /api/profile                - Update profile
-```
+Each run drops and rebuilds a separate test database from `schema.sql` plus all migrations, so real data is never touched. GitHub Actions (`.github/workflows/ci.yml`) runs a syntax check and the tests on MariaDB 10.4 for every push.
 
 ---
 
-## 🗄️ Database Schema
+## Code layout
 
-### Primary Tables
-- `shipments` - Shipment records with origin, destination, status
-- `shipment_items` - Items within each shipment
-- `deliveries` - Delivery assignments and tracking
-- `routes` - Delivery routes and schedules
-- `drivers` - Driver profiles and information
-- `vehicles` - Fleet management
-- `invoices` - Billing and payment records
-- `users` - User accounts and authentication
-- `locations` - Dubai area/warehouse locations
-- `activity_log` - System activity tracking
-
----
-
-## 🔐 Security Features
-
-- ✅ User authentication & authorization
-- ✅ Password hashing (bcrypt)
-- ✅ CSRF token protection
-- ✅ SQL injection prevention
-- ✅ Input validation and sanitization
-- ✅ XSS protection
-- ✅ Rate limiting on API endpoints
-- ✅ HTTPS/SSL support
-- ✅ Audit logging
-- ✅ Role-based access control
-
----
-
-## 🧪 Testing
-
-```bash
-# Run tests
-php artisan test
-
-# Run specific test suite
-php artisan test tests/Feature/ShipmentTest.php
-
-# Generate code coverage
-php artisan test --coverage
+```
+app/core/         App (router), Controller, Model, Migrator
+app/controllers/  one controller per area; URLs are index.php?url=<controller>/<action>/<id>
+app/models/       database access and business rules (transactions live here)
+app/services/     WhatsApp, Sms, AzamPay, StockAlert, Thumbnail, ErrorReporter, Instagram importer, Mailer
+app/views/        PHP templates (layouts/, partials/, one folder per area)
+app/helpers/      Auth, formatting and URL helpers, class autoloader
+public/           the only web-visible folder: index.php, assets/, uploads/
+storage/          backups, logs, Instagram export (not web-visible, not in git)
+tools/            command-line scripts
+tests/            test runner and *Test.php files
 ```
 
----
-
-## 🌐 Deployment
-
-### Production Setup
-
-```bash
-# Install production dependencies
-composer install --no-dev
-
-# Optimize application
-php artisan optimize
-php artisan config:cache
-php artisan route:cache
-
-# Run migrations
-php artisan migrate --force
-
-# Set permissions
-chmod -R 755 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-```
-
-### Hosting Options
-- AWS EC2 + RDS
-- DigitalOcean
-- Heroku
-- Custom VPS
-- Google Cloud Platform
-
----
-
-## 📱 User Roles
-
-### Admin
-- Full system access
-- User management
-- Configuration settings
-- System analytics
-- Report generation
-
-### Manager
-- View all shipments and deliveries
-- Assign drivers to routes
-- Monitor performance
-- Generate reports
-- Manage customer accounts
-
-### Driver
-- View assigned deliveries
-- Update delivery status
-- Upload proof of delivery
-- View earnings
-- Track route
-
-### Accountant
-- View invoices and payments
-- Process refunds
-- Financial reporting
-- Rate management
-
-### Customer
-- Track shipments
-- View invoice history
-- Download documents
-- Communicate with support
-
----
-
-## 📈 Performance Optimization
-
-- Database query optimization with indexing
-- Caching strategies (Redis/Memcached)
-- API response pagination
-- Image optimization
-- Lazy loading for tracking maps
-- Database connection pooling
-- CDN for static assets
-
----
-
-## 🐛 Known Issues & Roadmap
-
-### Current Version: 1.0.0
-- ✅ Basic shipment management
-- ✅ Delivery tracking
-- ✅ Billing system
-- ✅ User management
-- ✅ Reporting
-
-### Upcoming Features (v1.1.0)
-- 📌 Mobile app (iOS/Android)
-- 📌 Advanced route optimization (AI/ML)
-- 📌 Real-time GPS tracking
-- 📌 Automated notifications (SMS/Email)
-- 📌 Multi-language support
-- 📌 Integration with payment gateways
-- 📌 Customs documentation automation
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit changes (`git commit -m 'Add new feature'`)
-4. Push to branch (`git push origin feature/new-feature`)
-5. Submit a Pull Request
-
-### Code Standards
-- Follow PSR-12 PHP standards
-- Write meaningful commit messages
-- Include tests for new features
-- Update documentation
-
----
-
-## 📞 Support & Contact
-
-**Developer:** Gida Thomas  
-**Email:** gidamasaudathomas@gmail.com  
-**GitHub:** [@GidahThomas](https://github.com/GidahThomas)  
-**University:** University of Dodoma
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-## 🙏 Acknowledgments
-
-- Built as part of software engineering coursework
-- Inspired by real-world logistics challenges
-- Thanks to all contributors and testers
-
----
-
-**Last Updated:** September 2026 | **Status:** 🟢 Active | **Version:** 1.0.0
+Classes load from `app/` automatically (`app/helpers/autoload.php`; Composer's classmap is used too when `vendor/` exists).

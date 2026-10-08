@@ -3907,3 +3907,29 @@ body.app-body .form-select {
     color: var(--color-muted);
     font-weight: 600;
 }
+
+/* ---------- Barcode scanning (Sales Tracking) ---------- */
+.barcode-scan {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    color: var(--color-muted);
+}
+
+.barcode-feedback {
+    display: block;
+    min-height: 1.1em;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+}
+
+.barcode-video {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: #000;
+    object-fit: cover;
+}

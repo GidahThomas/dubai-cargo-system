@@ -856,3 +856,97 @@ document.addEventListener('click', (event) => {
     toggle.textContent = expanded ? 'Show less' : 'Read more';
     toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
 });
+
+/*
+ * Barcode scanning on the Sales Tracking forms. USB/Bluetooth scanners type the code and press
+ * Enter, so the scan box looks the code up among the product options (by SKU) and selects it.
+ * Phones with a camera and the BarcodeDetector API (Chrome on Android) get a camera button too.
+ */
+document.querySelectorAll('[data-barcode-scan]').forEach((wrapper) => {
+    const select = document.getElementById(wrapper.dataset.barcodeScan);
+    const input = wrapper.querySelector('[data-barcode-input]');
+    const feedback = wrapper.parentElement.querySelector('[data-barcode-feedback]');
+    const cameraButton = wrapper.querySelector('[data-barcode-camera]');
+    if (!select || !input) {
+        return;
+    }
+
+    const say = (text, ok) => {
+        if (feedback) {
+            feedback.textContent = text;
+            feedback.className = 'barcode-feedback ' + (ok ? 'text-success' : 'text-danger');
+        }
+    };
+
+    const pick = (code) => {
+        const wanted = code.trim().toLowerCase();
+        if (!wanted) {
+            return;
+        }
+        const option = Array.from(select.options).find((o) => (o.dataset.sku || '').toLowerCase() === wanted);
+        if (option) {
+            select.value = option.value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            say('Selected: ' + option.textContent.trim(), true);
+            input.value = '';
+        } else {
+            say('No product with code "' + code.trim() + '"', false);
+            input.select();
+        }
+    };
+
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // a scanner's Enter must not submit the form
+            pick(input.value);
+        }
+    });
+
+    if (cameraButton && 'BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
+        cameraButton.hidden = false;
+        let stream = null;
+        let video = null;
+
+        const stop = () => {
+            stream?.getTracks().forEach((track) => track.stop());
+            video?.remove();
+            stream = null;
+            video = null;
+        };
+
+        cameraButton.addEventListener('click', async () => {
+            if (stream) {
+                stop();
+                return;
+            }
+            try {
+                const detector = new window.BarcodeDetector();
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video = document.createElement('video');
+                video.className = 'barcode-video';
+                video.setAttribute('playsinline', '');
+                video.srcObject = stream;
+                wrapper.after(video);
+                await video.play();
+                say('Point the camera at the barcode…', true);
+
+                const scan = async () => {
+                    if (!stream) {
+                        return;
+                    }
+                    const codes = await detector.detect(video).catch(() => []);
+                    if (codes.length) {
+                        pick(codes[0].rawValue);
+                        stop();
+                        return;
+                    }
+                    requestAnimationFrame(scan);
+                };
+                scan();
+            } catch (error) {
+                stop();
+                say('Camera not available: ' + error.message, false);
+            }
+        });
+    }
+});
