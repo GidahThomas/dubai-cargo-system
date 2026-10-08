@@ -115,6 +115,45 @@ class UserController extends Controller
         $this->redirect('dashboard');
     }
 
+    public function password(): void
+    {
+        $this->requireLogin();
+
+        if (!$this->isPost()) {
+            $this->view('users/password', ['pageTitle' => 'Change Password']);
+            return;
+        }
+
+        $this->validateCsrf();
+
+        $current = (string) $this->post('current_password');
+        $new = (string) $this->post('new_password');
+        $confirm = (string) $this->post('confirm_password');
+        $user = (new User())->findById((int) Auth::id());
+
+        if (!$user || !password_verify($current, $user['password'])) {
+            flash('error', 'Your current password is not correct.');
+            $this->redirect('users/password');
+        }
+
+        if (strlen($new) < Auth::MIN_PASSWORD_LENGTH || $new !== $confirm) {
+            flash('error', 'The new password must be at least ' . Auth::MIN_PASSWORD_LENGTH . ' characters and both entries must match.');
+            $this->redirect('users/password');
+        }
+
+        if (password_verify($new, $user['password'])) {
+            flash('error', 'Choose a password different from your current one.');
+            $this->redirect('users/password');
+        }
+
+        (new User())->updatePassword((int) Auth::id(), $new);
+        session_regenerate_id(true);
+        (new AuditLog())->create(Auth::id(), 'password_changed', 'users', Auth::id());
+
+        flash('success', 'Password changed.');
+        $this->redirect('dashboard');
+    }
+
     private function userPayload(bool $withPassword = true): array
     {
         $payload = [
@@ -147,6 +186,12 @@ class UserController extends Controller
             return false;
         }
 
-        return !$passwordRequired || strlen($data['password'] ?? '') >= 6;
+        $password = (string) ($data['password'] ?? '');
+
+        if ($password === '') {
+            return !$passwordRequired;
+        }
+
+        return strlen($password) >= Auth::MIN_PASSWORD_LENGTH;
     }
 }

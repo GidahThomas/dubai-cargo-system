@@ -16,9 +16,9 @@ class Notification extends Model
         );
 
         // Customers also get the update on WhatsApp and/or SMS when those services are configured.
+        // It is queued here and sent in the background by tools/send_messages.php.
         if ($created) {
-            WhatsApp::notifyUser($userId, $title, $message);
-            Sms::notifyUser($userId, $title, $message);
+            CustomerMessenger::queue($userId, $title, $message);
         }
 
         return $created;

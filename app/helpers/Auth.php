@@ -2,13 +2,29 @@
 
 final class Auth
 {
+    public const MIN_PASSWORD_LENGTH = 8;
+
+    /**
+     * True for HTTPS requests, including behind a hosting proxy/load balancer that terminates SSL
+     * (only trusted when TRUST_PROXY=true, since the header can otherwise be faked).
+     */
+    public static function isHttpsRequest(): bool
+    {
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+            return true;
+        }
+
+        return filter_var($_ENV['TRUST_PROXY'] ?? false, FILTER_VALIDATE_BOOLEAN)
+            && strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    }
+
     public static function startSecureSession(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
             return;
         }
 
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        $isHttps = self::isHttpsRequest();
 
         session_name('DCFCS_SESSION');
         session_set_cookie_params([

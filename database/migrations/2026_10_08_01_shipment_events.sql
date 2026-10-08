@@ -1,5 +1,3 @@
-USE dubai_computer_fast_cargo;
-
 -- History of every stage a shipment reaches, used for the customer tracking timeline.
 CREATE TABLE IF NOT EXISTS shipment_events (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

@@ -12,6 +12,8 @@
  */
 class Sms
 {
+    public static ?string $lastError = null;
+
     private const MAX_LENGTH = 300;
 
     public static function isEnabled(): bool
@@ -23,25 +25,6 @@ class Sms
         };
     }
 
-    public static function notifyUser(int $userId, string $title, string $message): bool
-    {
-        if (!self::isEnabled()) {
-            return false;
-        }
-
-        try {
-            $user = (new User())->findById($userId);
-        } catch (Throwable $exception) {
-            error_log('SMS: user lookup failed: ' . $exception->getMessage());
-            return false;
-        }
-
-        if (!$user || ($user['role'] ?? '') !== 'customer' || ($user['status'] ?? '') !== 'active' || trim((string) ($user['phone'] ?? '')) === '') {
-            return false;
-        }
-
-        return self::send((string) $user['phone'], self::format($title, $message));
-    }
 
     public static function format(string $title, string $message): string
     {
@@ -52,13 +35,15 @@ class Sms
 
     public static function send(string $phone, string $text): bool
     {
+        self::$lastError = null;
+
         if (!self::isEnabled()) {
             return false;
         }
 
         $number = whatsapp_number($phone);
         if ($number === '') {
-            error_log('SMS: invalid phone number "' . $phone . '"');
+            error_log(self::$lastError = 'SMS: invalid phone number "' . $phone . '"');
             return false;
         }
 
@@ -103,7 +88,7 @@ class Sms
     private static function post(string $url, array $headers, string $body): bool
     {
         if (!function_exists('curl_init')) {
-            error_log('SMS: the PHP curl extension is not enabled');
+            error_log(self::$lastError = 'SMS: the PHP curl extension is not enabled');
             return false;
         }
 
@@ -123,7 +108,7 @@ class Sms
         curl_close($curl);
 
         if ($response === false || $status < 200 || $status >= 300) {
-            error_log(sprintf('SMS: send failed (HTTP %d) %s %s', $status, $error, is_string($response) ? substr($response, 0, 500) : ''));
+            error_log(self::$lastError = sprintf('SMS: send failed (HTTP %d) %s %s', $status, $error, is_string($response) ? substr($response, 0, 500) : ''));
             return false;
         }
 

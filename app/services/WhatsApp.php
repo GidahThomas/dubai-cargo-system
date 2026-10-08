@@ -11,6 +11,8 @@
  */
 class WhatsApp
 {
+    public static ?string $lastError = null;
+
     private const API_VERSION = 'v21.0';
 
     public static function isEnabled(): bool
@@ -18,35 +20,17 @@ class WhatsApp
         return self::config('WHATSAPP_TOKEN') !== '' && self::config('WHATSAPP_PHONE_NUMBER_ID') !== '';
     }
 
-    public static function notifyUser(int $userId, string $title, string $message): bool
-    {
-        if (!self::isEnabled()) {
-            return false;
-        }
-
-        try {
-            $user = (new User())->findById($userId);
-        } catch (Throwable $exception) {
-            error_log('WhatsApp: user lookup failed: ' . $exception->getMessage());
-            return false;
-        }
-
-        if (!$user || ($user['role'] ?? '') !== 'customer' || ($user['status'] ?? '') !== 'active' || trim((string) ($user['phone'] ?? '')) === '') {
-            return false;
-        }
-
-        return self::send((string) $user['phone'], $title, $message);
-    }
-
     public static function send(string $phone, string $title, string $message): bool
     {
+        self::$lastError = null;
+
         if (!self::isEnabled()) {
             return false;
         }
 
         $to = whatsapp_number($phone);
         if ($to === '') {
-            error_log('WhatsApp: invalid phone number "' . $phone . '"');
+            error_log(self::$lastError = 'WhatsApp: invalid phone number "' . $phone . '"');
             return false;
         }
 
@@ -77,7 +61,7 @@ class WhatsApp
     private static function post(array $payload): bool
     {
         if (!function_exists('curl_init')) {
-            error_log('WhatsApp: the PHP curl extension is not enabled');
+            error_log(self::$lastError = 'WhatsApp: the PHP curl extension is not enabled');
             return false;
         }
 
@@ -101,7 +85,7 @@ class WhatsApp
         curl_close($curl);
 
         if ($response === false || $status < 200 || $status >= 300) {
-            error_log(sprintf('WhatsApp: send failed (HTTP %d) %s %s', $status, $error, is_string($response) ? substr($response, 0, 500) : ''));
+            error_log(self::$lastError = sprintf('WhatsApp: send failed (HTTP %d) %s %s', $status, $error, is_string($response) ? substr($response, 0, 500) : ''));
             return false;
         }
 

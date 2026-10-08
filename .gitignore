@@ -15,3 +15,9 @@ tests/coverage/
 # Instagram "Download your information" export (extract the ZIP here, then import from the admin)
 storage/instagram-export/*
 !storage/instagram-export/.gitkeep
+
+# Local backups (tools/backup.php)
+storage/backups/
+# Logs
+storage/logs/*
+!storage/logs/.gitkeep

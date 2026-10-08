@@ -3878,3 +3878,22 @@ body.app-body .form-select {
     font-size: 0.85rem;
     overflow-wrap: anywhere;
 }
+
+.sidebar-footer-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.sidebar-footer-link:hover,
+.sidebar-footer-link.is-active {
+    color: var(--color-primary);
+    background: rgba(8, 80, 65, 0.08);
+}

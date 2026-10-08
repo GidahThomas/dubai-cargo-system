@@ -5,35 +5,47 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-define('ROOT_PATH', dirname(__DIR__));
+/*
+ * Runs every tests/*Test.php against a throwaway database (DB_TEST_NAME, default "<DB_NAME>_test")
+ * that is rebuilt from database/schema.sql plus all migrations on every run. The real
+ * database is never touched.
+ */
+
 define('APP_DEBUG', true);
+require dirname(__DIR__) . '/tools/bootstrap.php';
 
-require ROOT_PATH . '/app/helpers/Env.php';
-load_env(ROOT_PATH . '/.env');
-
-date_default_timezone_set('Africa/Dar_es_Salaam');
-
-require ROOT_PATH . '/app/config/database.php';
-require ROOT_PATH . '/app/helpers/Auth.php';
-
-spl_autoload_register(function (string $class): void {
-    $folders = [
-        ROOT_PATH . '/app/core/',
-        ROOT_PATH . '/app/controllers/',
-        ROOT_PATH . '/app/models/',
-        ROOT_PATH . '/app/services/',
-        ROOT_PATH . '/app/middleware/',
-        ROOT_PATH . '/tests/',
-    ];
-
-    foreach ($folders as $folder) {
-        $file = $folder . $class . '.php';
-        if (file_exists($file)) {
-            require $file;
-            return;
-        }
+spl_autoload_register(static function (string $class): void {
+    $file = ROOT_PATH . '/tests/' . $class . '.php';
+    if (is_file($file)) {
+        require $file;
     }
 });
+
+$liveDatabase = ($_ENV['DB_NAME'] ?? '') ?: 'dubai_computer_fast_cargo';
+$testDatabase = ($_ENV['DB_TEST_NAME'] ?? '') ?: $liveDatabase . '_test';
+
+if (!preg_match('/^[A-Za-z0-9_]+$/', $testDatabase) || $testDatabase === $liveDatabase) {
+    fwrite(STDERR, "Refusing to run: the test database must be a separate, simple name (got \"{$testDatabase}\").\n");
+    exit(1);
+}
+
+$server = new PDO(
+    sprintf('mysql:host=%s;charset=utf8mb4', $_ENV['DB_HOST'] ?? '127.0.0.1'),
+    $_ENV['DB_USER'] ?? 'root',
+    $_ENV['DB_PASS'] ?? '',
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+);
+$server->exec("DROP DATABASE IF EXISTS `{$testDatabase}`");
+$server->exec("CREATE DATABASE `{$testDatabase}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+$server->exec("USE `{$testDatabase}`");
+
+$schema = (string) file_get_contents(ROOT_PATH . '/database/schema.sql');
+$schema = preg_replace('/^\s*(CREATE DATABASE|USE)\b[^;]*;/mi', '', $schema);
+Migrator::runSql($server, (string) $schema);
+
+$_ENV['DB_NAME'] = $testDatabase;
+(new Migrator(Database::connect()))->migrate();
+echo "Test database {$testDatabase} rebuilt from schema.sql and migrations.\n\n";
 
 $testFiles = glob(ROOT_PATH . '/tests/*Test.php');
 sort($testFiles);

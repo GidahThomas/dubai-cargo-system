@@ -9,6 +9,19 @@
         }
     ],
     "require": {
-        "phpmailer/phpmailer": "*"
+        "php": ">=8.2",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "autoload": {
+        "classmap": [
+            "app/core/",
+            "app/controllers/",
+            "app/models/",
+            "app/services/"
+        ]
+    },
+    "scripts": {
+        "test": "php tests/run.php",
+        "migrate": "php tools/migrate.php"
     }
 }

@@ -62,8 +62,8 @@ class AuthController extends Controller
             $password = (string) $this->post('password');
             $confirmPassword = (string) $this->post('confirm_password');
 
-            if ($name === '' || !$email || strlen($password) < 6 || $password !== $confirmPassword) {
-                flash('error', 'Please complete the form. Passwords must match and be at least 6 characters.');
+            if ($name === '' || !$email || strlen($password) < Auth::MIN_PASSWORD_LENGTH || $password !== $confirmPassword) {
+                flash('error', 'Please complete the form. Passwords must match and be at least ' . Auth::MIN_PASSWORD_LENGTH . ' characters.');
                 $this->redirect('register');
             }
 

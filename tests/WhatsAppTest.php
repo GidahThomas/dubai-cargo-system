@@ -60,6 +60,6 @@ class WhatsAppTest extends TestCase
     {
         $this->assertFalse(WhatsApp::isEnabled());
         $this->assertFalse(WhatsApp::send('0652532646', 'Title', 'Message'));
-        $this->assertFalse(WhatsApp::notifyUser(3, 'Title', 'Message'));
+        $this->assertEquals(0, CustomerMessenger::queue(3, 'Title', 'Message'));
     }
 }

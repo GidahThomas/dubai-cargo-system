@@ -14,26 +14,7 @@ if (PHP_SAPI !== 'cli') {
  * The export folder defaults to storage/instagram-export.
  */
 
-define('ROOT_PATH', dirname(__DIR__));
-
-require ROOT_PATH . '/app/helpers/Env.php';
-load_env(ROOT_PATH . '/.env');
-define('APP_DEBUG', true);
-
-date_default_timezone_set('Africa/Dar_es_Salaam');
-
-require ROOT_PATH . '/app/config/database.php';
-require ROOT_PATH . '/app/helpers/Auth.php';
-
-spl_autoload_register(function (string $class): void {
-    foreach (['core', 'controllers', 'models', 'services'] as $folder) {
-        $file = ROOT_PATH . '/app/' . $folder . '/' . $class . '.php';
-        if (file_exists($file)) {
-            require $file;
-            return;
-        }
-    }
-});
+require __DIR__ . '/bootstrap.php';
 
 $arguments = array_slice($argv, 1);
 $createProducts = !in_array('--no-products', $arguments, true);

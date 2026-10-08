@@ -20,9 +20,15 @@ abstract class TestCase
             try {
                 $this->setUp();
                 $this->$method();
-                $this->tearDown();
             } catch (Throwable $exception) {
                 $this->failures[] = $exception->getMessage();
+            } finally {
+                // Always clean up, so one failing test cannot leak state into the next.
+                try {
+                    $this->tearDown();
+                } catch (Throwable $exception) {
+                    $this->failures[] = 'tearDown: ' . $exception->getMessage();
+                }
             }
 
             $results[] = [

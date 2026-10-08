@@ -45,13 +45,13 @@
 
             <div class="col-md-6">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" minlength="6" placeholder="At least 6 characters" required>
+                <input type="password" class="form-control" id="password" name="password" minlength="8" placeholder="At least 8 characters" required>
                 <div class="invalid-feedback">Use at least 6 characters.</div>
             </div>
 
             <div class="col-md-6">
                 <label for="confirm_password" class="form-label">Confirm password</label>
-                <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="6" placeholder="Re-enter your password" required>
+                <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="8" placeholder="Re-enter your password" required>
                 <div class="invalid-feedback">Confirm your password.</div>
             </div>
         </div>

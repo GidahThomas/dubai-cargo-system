@@ -77,6 +77,7 @@ $navSections = [
         'items' => [
             ['label' => 'Customers', 'icon' => 'bi-people', 'url' => 'users', 'roles' => $managerRoles],
             ['label' => 'Reports', 'icon' => 'bi-bar-chart', 'url' => 'reports', 'roles' => $managerRoles],
+            ['label' => 'Message Log', 'icon' => 'bi-chat-dots', 'url' => 'messages', 'roles' => $managerRoles],
             ['label' => 'Instagram Import', 'icon' => 'bi-instagram', 'url' => 'instagram', 'roles' => $managerRoles],
             ['label' => 'Audit Review', 'icon' => 'bi-shield-check', 'url' => 'audit', 'roles' => ['admin']],
             ['label' => 'Settings', 'icon' => 'bi-gear', 'url' => 'invoices/settings', 'roles' => $managerRoles],
@@ -140,6 +141,9 @@ foreach ($navSections as $sectionIndex => $section) {
     </nav>
 
     <div class="sidebar-footer">
+        <a class="sidebar-footer-link <?= $currentRoute === 'users/password' ? 'is-active' : '' ?>" href="<?= h(url('users/password')) ?>">
+            <i class="bi bi-shield-lock"></i> Change password
+        </a>
         <a class="btn btn-outline-light w-100" href="<?= h(url('logout')) ?>">
             <i class="bi bi-box-arrow-right me-2"></i>Logout
         </a>

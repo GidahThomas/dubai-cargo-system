@@ -53,6 +53,7 @@ class App
 
             $this->call($controllerName, $method, $params);
         } catch (Throwable $exception) {
+            ErrorReporter::report($exception);
             http_response_code(500);
 
             if (defined('APP_DEBUG') && APP_DEBUG) {

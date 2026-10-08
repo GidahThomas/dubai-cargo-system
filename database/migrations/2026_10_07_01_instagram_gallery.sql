@@ -1,5 +1,3 @@
-USE dubai_computer_fast_cargo;
-
 -- Posts imported from the company's Instagram "Download your information" export.
 CREATE TABLE IF NOT EXISTS instagram_posts (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
