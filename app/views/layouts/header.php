@@ -49,6 +49,7 @@ $info = flash('info');
                 <a href="<?= h(url('products')) ?>">Products</a>
                 <a href="<?= h(url('track-shipment')) ?>">Track Shipment</a>
                 <a href="<?= h(url('request-invoice')) ?>">Request Invoice</a>
+                <a href="<?= h(url('gallery')) ?>">Gallery</a>
                 <a href="<?= h(url('contact')) ?>">Contact</a>
                 <a class="btn btn-light btn-sm" href="<?= h(url('request-quotation')) ?>">
                     <i class="bi bi-truck"></i> Get Quote
@@ -60,7 +61,7 @@ $info = flash('info');
     </header>
     <main class="public-main">
 <?php elseif (Auth::check()): ?>
-    <button class="btn btn-dark sidebar-toggle d-lg-none" type="button" data-sidebar-toggle aria-label="Open navigation">
+    <button class="btn btn-dark sidebar-toggle d-lg-none" type="button" data-sidebar-toggle aria-label="Open navigation" aria-controls="appSidebar" aria-expanded="false">
         <i class="bi bi-list"></i>
     </button>
     <div class="sidebar-backdrop" data-sidebar-backdrop></div>

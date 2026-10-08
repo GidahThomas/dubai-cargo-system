@@ -70,6 +70,7 @@ if (!defined('ROOT_PATH')) {
                         </span>
                         <p class="mb-0">Order <?= h($trackingResult['order_number']) ?> from <?= h($trackingResult['origin']) ?> to <?= h($trackingResult['destination']) ?>.</p>
                     </div>
+                    <?php require ROOT_PATH . '/app/views/partials/shipment-timeline.php'; ?>
                 <?php else: ?>
                     <div class="alert alert-warning mt-3 mb-0">No shipment was found for that tracking number.</div>
                 <?php endif; ?>
@@ -140,7 +141,7 @@ if (!defined('ROOT_PATH')) {
             </div>
         </section>
 
-        <section class="panel mt-4">
+        <section class="panel mt-4" id="profile">
             <div class="panel-header">
                 <h2>Profile</h2>
             </div>

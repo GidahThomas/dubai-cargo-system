@@ -79,9 +79,33 @@ class Order extends Model
 
     public function createFromProduct(int $userId, int $productId, int $quantity, string $shippingAddress, ?string $notes = null, ?int $locationId = null): int
     {
-        if ($quantity < 1) {
-            throw new InvalidArgumentException('Quantity must be at least 1.');
+        return $this->createFromItems($userId, [$productId => $quantity], $shippingAddress, $notes, $locationId);
+    }
+
+    /**
+     * Places one order for several products. Stock for every line is checked and reserved
+     * in a single transaction, so either the whole order goes through or nothing changes.
+     *
+     * @param array<int, int> $items product id => quantity
+     */
+    public function createFromItems(int $userId, array $items, string $shippingAddress, ?string $notes = null, ?int $locationId = null): int
+    {
+        $lines = [];
+        foreach ($items as $productId => $quantity) {
+            $productId = (int) $productId;
+            $quantity = (int) $quantity;
+            if ($productId < 1 || $quantity < 1) {
+                throw new InvalidArgumentException('Each product needs a quantity of at least 1.');
+            }
+            $lines[$productId] = ($lines[$productId] ?? 0) + $quantity;
         }
+
+        if (!$lines) {
+            throw new InvalidArgumentException('Your cart is empty.');
+        }
+
+        // Lock rows in a fixed order so two simultaneous orders cannot deadlock.
+        ksort($lines);
 
         $locationId ??= (new Invoice())->settings()['default_location_id'] ?? null;
         $locationId = $locationId !== null ? (int) $locationId : null;
@@ -100,18 +124,26 @@ class Order extends Model
                  WHERE p.id = :id AND p.status = "active"
                  FOR UPDATE'
             );
-            $productStmt->execute(['id' => $productId, 'location_id' => $locationId]);
-            $product = $productStmt->fetch();
+            $products = [];
+            $total = 0.0;
 
-            if (!$product) {
-                throw new RuntimeException('Product was not found or is inactive.');
+            foreach ($lines as $productId => $quantity) {
+                $productStmt->execute(['id' => $productId, 'location_id' => $locationId]);
+                $product = $productStmt->fetch();
+                $productStmt->closeCursor();
+
+                if (!$product) {
+                    throw new RuntimeException('A product in your cart was not found or is no longer available.');
+                }
+
+                if ((int) $product['stock'] < $quantity) {
+                    throw new RuntimeException(sprintf('Only %d of "%s" is in stock.', max(0, (int) $product['stock']), $product['name']));
+                }
+
+                $products[$productId] = $product;
+                $total += (float) $product['price'] * $quantity;
             }
 
-            if ((int) $product['stock'] < $quantity) {
-                throw new RuntimeException('Not enough inventory is available for this product.');
-            }
-
-            $lineTotal = (float) $product['price'] * $quantity;
             $orderNumber = $this->generateOrderNumber();
 
             $orderStmt = $this->db->prepare(
@@ -122,7 +154,7 @@ class Order extends Model
                 'order_number' => $orderNumber,
                 'user_id' => $userId,
                 'location_id' => $locationId,
-                'total_amount' => $lineTotal,
+                'total_amount' => $total,
                 'shipping_address' => $shippingAddress,
                 'notes' => $notes,
             ]);
@@ -133,22 +165,26 @@ class Order extends Model
                 'INSERT INTO order_items (order_id, product_id, quantity, unit_price, line_total)
                  VALUES (:order_id, :product_id, :quantity, :unit_price, :line_total)'
             );
-            $itemStmt->execute([
-                'order_id' => $orderId,
-                'product_id' => $productId,
-                'quantity' => $quantity,
-                'unit_price' => (float) $product['price'],
-                'line_total' => $lineTotal,
-            ]);
-
             $stockStmt = $this->db->prepare(
                 'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id AND location_id = :location_id'
             );
-            $stockStmt->execute([
-                'quantity' => $quantity,
-                'product_id' => $productId,
-                'location_id' => $locationId,
-            ]);
+
+            foreach ($lines as $productId => $quantity) {
+                $unitPrice = (float) $products[$productId]['price'];
+                $itemStmt->execute([
+                    'order_id' => $orderId,
+                    'product_id' => $productId,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'line_total' => $unitPrice * $quantity,
+                ]);
+                $stockStmt->execute([
+                    'quantity' => $quantity,
+                    'product_id' => $productId,
+                    'location_id' => $locationId,
+                ]);
+                StockAlert::check($productId, $locationId);
+            }
 
             $paymentStmt = $this->db->prepare(
                 'INSERT INTO payments (order_id, amount, status)
@@ -156,7 +192,7 @@ class Order extends Model
             );
             $paymentStmt->execute([
                 'order_id' => $orderId,
-                'amount' => $lineTotal,
+                'amount' => $total,
             ]);
 
             $this->db->commit();
@@ -212,6 +248,7 @@ class Order extends Model
                     'product_id' => (int) $item['product_id'],
                     'location_id' => $locationId,
                 ]);
+                StockAlert::check((int) $item['product_id'], $locationId);
             }
 
             $this->execute('UPDATE orders SET status = "cancelled" WHERE id = :id', ['id' => $orderId]);

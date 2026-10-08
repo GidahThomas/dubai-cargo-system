@@ -26,6 +26,11 @@
                 <input class="form-control" id="brand" name="brand" placeholder="e.g. Dell" required>
             </div>
             <div class="col-md-3">
+                <label class="form-label" for="country_of_origin">Country of origin</label>
+                <input class="form-control" id="country_of_origin" name="country_of_origin" list="originCountries" placeholder="e.g. United Arab Emirates">
+                <datalist id="originCountries"><option value="United Arab Emirates"><option value="China"><option value="United States"><option value="Japan"><option value="South Korea"><option value="Taiwan"><option value="India"><option value="United Kingdom"><option value="Germany"></datalist>
+            </div>
+            <div class="col-md-3">
                 <label class="form-label" for="price">Price (TZS)</label>
                 <input type="number" step="1" min="0" class="form-control" id="price" name="price" placeholder="0" required>
             </div>

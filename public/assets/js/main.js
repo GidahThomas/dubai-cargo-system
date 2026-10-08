@@ -26,19 +26,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
     const sidebarBackdrop = document.querySelector('[data-sidebar-backdrop]');
 
-    const closeSidebar = () => {
-        sidebar?.classList.remove('is-open');
-        sidebarBackdrop?.classList.remove('is-open');
+    const setSidebarOpen = (open) => {
+        sidebar?.classList.toggle('is-open', open);
+        sidebarBackdrop?.classList.toggle('is-open', open);
+        if (sidebarToggle) {
+            sidebarToggle.classList.toggle('is-open', open);
+            sidebarToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            sidebarToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+            sidebarToggle.querySelector('i')?.classList.replace(open ? 'bi-list' : 'bi-x-lg', open ? 'bi-x-lg' : 'bi-list');
+        }
     };
+    const closeSidebar = () => setSidebarOpen(false);
 
     if (sidebar && sidebarToggle) {
-        sidebarToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('is-open');
-            sidebarBackdrop?.classList.toggle('is-open');
-        });
+        sidebarToggle.addEventListener('click', () => setSidebarOpen(!sidebar.classList.contains('is-open')));
     }
 
     sidebarBackdrop?.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && sidebar?.classList.contains('is-open')) {
+            closeSidebar();
+        }
+    });
 
     const publicNavLinks = document.querySelector('[data-public-nav-links]');
     const publicNavToggle = document.querySelector('[data-public-nav-toggle]');
@@ -835,3 +844,15 @@ function escapeHtml(value) {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
 }
+
+document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-caption-toggle]');
+    if (!toggle) {
+        return;
+    }
+
+    const caption = document.getElementById(toggle.dataset.captionToggle);
+    const expanded = caption?.classList.toggle('is-expanded') ?? false;
+    toggle.textContent = expanded ? 'Show less' : 'Read more';
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+});

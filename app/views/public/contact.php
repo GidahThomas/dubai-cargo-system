@@ -36,6 +36,13 @@
         <p><i class="bi bi-telephone"></i> <?= h(company_phone()) ?></p>
         <p><i class="bi bi-envelope"></i> <?= h(company_email()) ?></p>
         <p><i class="bi bi-headset"></i> <?= h(customer_contact_email()) ?></p>
+        <?php foreach (whatsapp_contacts() as $contact): ?>
+            <p>
+                <i class="bi bi-whatsapp"></i>
+                <a href="<?= h($contact['url']) ?>" target="_blank" rel="noopener"><?= h($contact['phone']) ?></a>
+                <small class="d-block text-muted">WhatsApp &middot; <?= h($contact['label']) ?></small>
+            </p>
+        <?php endforeach; ?>
         <?php if (company_instagram_url()): ?>
             <p>
                 <i class="bi bi-instagram"></i>

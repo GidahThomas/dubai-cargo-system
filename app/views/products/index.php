@@ -96,9 +96,14 @@
                     <td class="text-end">
                         <?php if (Auth::role() === 'customer'): ?>
                             <?php if ((int) $product['quantity'] > 0): ?>
-                                <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#orderProduct<?= (int) $product['id'] ?>" title="Order product">
-                                    <i class="bi bi-bag-plus"></i>
-                                </button>
+                                <form method="post" action="<?= h(url('cart/add')) ?>" class="add-to-cart-form">
+                                    <?= Auth::csrfField() ?>
+                                    <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                                    <input type="number" class="form-control form-control-sm" name="quantity" value="1" min="1" max="<?= min(99, (int) $product['quantity']) ?>" aria-label="Quantity">
+                                    <button class="btn btn-sm btn-primary text-nowrap" type="submit" title="Add to cart">
+                                        <i class="bi bi-cart-plus"></i> Add
+                                    </button>
+                                </form>
                             <?php else: ?>
                                 <span class="text-muted">Out of stock</span>
                             <?php endif; ?>
@@ -115,33 +120,6 @@
                         <?php endif; ?>
                     </td>
                 </tr>
-                <?php if (Auth::role() === 'customer' && (int) $product['quantity'] > 0): ?>
-                    <tr class="collapse" id="orderProduct<?= (int) $product['id'] ?>">
-                        <td colspan="7" class="bg-light">
-                            <form method="post" action="<?= h(url('orders/store')) ?>" class="row g-2 align-items-end needs-validation" novalidate>
-                                <?= Auth::csrfField() ?>
-                                <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
-                                <div class="col-md-2">
-                                    <label class="form-label">Quantity</label>
-                                    <input type="number" min="1" max="<?= (int) $product['quantity'] ?>" class="form-control" name="quantity" value="1" required>
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label">Shipping address</label>
-                                    <input class="form-control" name="shipping_address" value="<?= h(Auth::user()['address'] ?? '') ?>" placeholder="Street, ward, and landmark" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Notes</label>
-                                    <input class="form-control" name="notes" placeholder="Optional">
-                                </div>
-                                <div class="col-md-2">
-                                    <button class="btn btn-primary w-100" type="submit">
-                                        <i class="bi bi-check2-circle me-2"></i>Order
-                                    </button>
-                                </div>
-                            </form>
-                        </td>
-                    </tr>
-                <?php endif; ?>
             <?php endforeach; ?>
             <?php if (!$products): ?>
                 <tr><td colspan="7" class="text-center text-muted py-4">No products found.</td></tr>

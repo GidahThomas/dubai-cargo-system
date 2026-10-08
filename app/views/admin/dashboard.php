@@ -203,7 +203,7 @@ $shipmentsBars = status_breakdown_bars($chartData['shipmentsByStatus'], 'status'
         <section class="panel mt-4">
             <div class="panel-header">
                 <h2>Audit Activity</h2>
-                <a href="<?= h(url('reports')) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-list-check"></i></a>
+                <a href="<?= h(url('audit')) ?>" class="btn btn-sm btn-outline-secondary" title="Open Audit Review"><i class="bi bi-list-check"></i> View all</a>
             </div>
             <div class="stack-list audit-mini">
                 <?php foreach (array_slice($auditLogs, 0, 5) as $log): ?>

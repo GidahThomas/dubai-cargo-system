@@ -36,6 +36,7 @@
                     <strong class="code-text"><?= h($trackingResult['order_number']) ?></strong>
                 </div>
             </div>
+            <?php require ROOT_PATH . '/app/views/partials/shipment-timeline.php'; ?>
         <?php else: ?>
             <div class="alert alert-warning mt-4 mb-0">No shipment was found for that tracking number.</div>
         <?php endif; ?>

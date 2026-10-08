@@ -119,7 +119,7 @@ class Product extends Model
 
     public function updateStockForLocation(int $productId, int $locationId, array $data): bool
     {
-        return $this->execute(
+        $updated = $this->execute(
             'INSERT INTO inventory (product_id, location_id, sku, quantity, reorder_level, location, supplier_name)
              VALUES (:product_id, :location_id, :sku, :quantity, :reorder_level, :location_label, :supplier_name)
              ON DUPLICATE KEY UPDATE
@@ -138,6 +138,9 @@ class Product extends Model
                 'supplier_name' => ($data['supplier_name'] ?? null) ?: null,
             ]
         );
+        StockAlert::check($productId, $locationId);
+
+        return $updated;
     }
 
     public function create(array $data, int $userId, ?int $stockingLocationId = null): int
@@ -146,14 +149,15 @@ class Product extends Model
 
         try {
             $stmt = $this->db->prepare(
-                'INSERT INTO products (name, category, brand, description, specifications, price, image, status, created_by)
-                 VALUES (:name, :category, :brand, :description, :specifications, :price, :image, :status, :created_by)'
+                'INSERT INTO products (name, category, brand, country_of_origin, description, specifications, price, image, status, created_by)
+                 VALUES (:name, :category, :brand, :country_of_origin, :description, :specifications, :price, :image, :status, :created_by)'
             );
 
             $stmt->execute([
                 'name' => $data['name'],
                 'category' => $data['category'],
                 'brand' => $data['brand'],
+                'country_of_origin' => ($data['country_of_origin'] ?? null) ?: null,
                 'description' => $data['description'] ?? null,
                 'specifications' => $data['specifications'] ?? null,
                 'price' => (float) $data['price'],
@@ -207,7 +211,7 @@ class Product extends Model
         try {
             $product = $this->db->prepare(
                 'UPDATE products
-                 SET name = :name, category = :category, brand = :brand, description = :description,
+                 SET name = :name, category = :category, brand = :brand, country_of_origin = :country_of_origin, description = :description,
                      specifications = :specifications,
                      price = :price, image = :image, status = :status
                  WHERE id = :id'
@@ -218,6 +222,7 @@ class Product extends Model
                 'name' => $data['name'],
                 'category' => $data['category'],
                 'brand' => $data['brand'],
+                'country_of_origin' => ($data['country_of_origin'] ?? null) ?: null,
                 'description' => $data['description'] ?? null,
                 'specifications' => $data['specifications'] ?? null,
                 'price' => (float) $data['price'],
@@ -258,6 +263,17 @@ class Product extends Model
              ORDER BY total DESC, name ASC
              LIMIT ' . (int) $limit
         );
+    }
+
+    public function brands(): array
+    {
+        return array_column($this->fetchAll(
+            'SELECT MAX(brand) AS brand
+             FROM products
+             WHERE status = "active" AND brand IS NOT NULL AND brand != ""
+             GROUP BY LOWER(TRIM(brand))
+             ORDER BY brand ASC'
+        ), 'brand');
     }
 
     public function countActive(): int

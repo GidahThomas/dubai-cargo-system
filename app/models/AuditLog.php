@@ -39,11 +39,38 @@ class AuditLog extends Model
         return (int) ($row['total'] ?? 0);
     }
 
-    public function all(array $filters = []): array
+    public function all(array $filters = [], int $limit = 100, int $offset = 0): array
     {
-        $sql = 'SELECT a.*, u.name AS user_name, u.email AS user_email
-                FROM audit_logs a
-                LEFT JOIN users u ON u.id = a.user_id';
+        [$where, $params] = $this->filterClause($filters);
+
+        return $this->fetchAll(
+            'SELECT a.*, u.name AS user_name, u.email AS user_email, u.role AS user_role
+             FROM audit_logs a
+             LEFT JOIN users u ON u.id = a.user_id'
+            . $where
+            . ' ORDER BY a.created_at DESC, a.id DESC LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset),
+            $params
+        );
+    }
+
+    public function count(array $filters = []): int
+    {
+        [$where, $params] = $this->filterClause($filters);
+        $row = $this->fetch('SELECT COUNT(*) AS total FROM audit_logs a' . $where, $params);
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    /**
+     * @return string[] every action name that has been logged, for the filter dropdown
+     */
+    public function actions(): array
+    {
+        return array_column($this->fetchAll('SELECT DISTINCT action FROM audit_logs ORDER BY action ASC'), 'action');
+    }
+
+    private function filterClause(array $filters): array
+    {
         $where = [];
         $params = [];
 
@@ -57,12 +84,22 @@ class AuditLog extends Model
             $params['user_id'] = (int) $filters['user_id'];
         }
 
-        if ($where) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
+        if (!empty($filters['date_from'])) {
+            $where[] = 'a.created_at >= :date_from';
+            $params['date_from'] = $filters['date_from'] . ' 00:00:00';
         }
 
-        $sql .= ' ORDER BY a.created_at DESC LIMIT 100';
+        if (!empty($filters['date_to'])) {
+            $where[] = 'a.created_at <= :date_to';
+            $params['date_to'] = $filters['date_to'] . ' 23:59:59';
+        }
 
-        return $this->fetchAll($sql, $params);
+        if (!empty($filters['search'])) {
+            $where[] = '(a.details LIKE :search OR a.ip_address LIKE :search_ip)';
+            $params['search'] = '%' . $filters['search'] . '%';
+            $params['search_ip'] = '%' . $filters['search'] . '%';
+        }
+
+        return [$where ? ' WHERE ' . implode(' AND ', $where) : '', $params];
     }
 }

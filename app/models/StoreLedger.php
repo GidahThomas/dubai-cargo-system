@@ -39,6 +39,7 @@ class StoreLedger extends Model
                 'product_id' => (int) $data['product_id'],
                 'location_id' => $locationId,
             ]);
+            StockAlert::check((int) $data['product_id'], $locationId);
 
             $this->db->commit();
 
@@ -119,6 +120,7 @@ class StoreLedger extends Model
                 'product_id' => $productId,
                 'location_id' => $locationId,
             ]);
+            StockAlert::check($productId, $locationId);
 
             $this->db->commit();
 

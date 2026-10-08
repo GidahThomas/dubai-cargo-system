@@ -31,6 +31,15 @@ class PublicController extends Controller
         ]);
     }
 
+    public function gallery(): void
+    {
+        $this->view('public/gallery', [
+            'layout' => 'public',
+            'pageTitle' => 'Gallery',
+            'posts' => (new InstagramPost())->all(true),
+        ]);
+    }
+
     public function contact(): void
     {
         if ($this->isPost()) {

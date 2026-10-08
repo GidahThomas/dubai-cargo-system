@@ -22,7 +22,7 @@ class Inventory extends Model
 
     public function adjustStock(int $productId, int $locationId, int $quantityChange): bool
     {
-        return $this->execute(
+        $updated = $this->execute(
             'UPDATE inventory
              SET quantity = GREATEST(quantity + :quantity_change, 0)
              WHERE product_id = :product_id AND location_id = :location_id',
@@ -32,6 +32,9 @@ class Inventory extends Model
                 'quantity_change' => $quantityChange,
             ]
         );
+        StockAlert::check($productId, $locationId);
+
+        return $updated;
     }
 
     public function totalUnits(?int $locationId = null): int

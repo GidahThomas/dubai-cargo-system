@@ -11,3 +11,7 @@ Thumbs.db
 # PHPUnit
 .phpunit.cache/
 tests/coverage/
+
+# Instagram "Download your information" export (extract the ZIP here, then import from the admin)
+storage/instagram-export/*
+!storage/instagram-export/.gitkeep

@@ -278,6 +278,79 @@ function company_instagram_url(): string
     return company_settings()['instagram_url'] ?: '';
 }
 
+/**
+ * Normalises a phone number to WhatsApp's international digits-only format,
+ * e.g. "0652 532 646" -> "255652532646". Returns '' when it cannot be a valid number.
+ */
+function whatsapp_number(?string $phone = null): string
+{
+    if ($phone === null) {
+        $phone = (string) ($_ENV['WHATSAPP_NUMBER'] ?? '') ?: company_phone();
+    }
+
+    $phone = trim($phone);
+    $digits = preg_replace('/\D+/', '', $phone);
+    $countryCode = preg_replace('/\D+/', '', (string) ($_ENV['WHATSAPP_COUNTRY_CODE'] ?? '255')) ?: '255';
+
+    if (str_starts_with($phone, '+')) {
+        // Already international.
+    } elseif (str_starts_with($digits, '00')) {
+        $digits = substr($digits, 2);
+    } elseif (str_starts_with($digits, '0')) {
+        $digits = $countryCode . substr($digits, 1);
+    } elseif (strlen($digits) <= 9) {
+        $digits = $countryCode . $digits;
+    }
+
+    return strlen($digits) >= 10 && strlen($digits) <= 15 ? $digits : '';
+}
+
+function whatsapp_url(string $message = '', ?string $phone = null): string
+{
+    $number = whatsapp_number($phone);
+    if ($number === '') {
+        return '';
+    }
+
+    return 'https://wa.me/' . $number . ($message !== '' ? '?text=' . rawurlencode($message) : '');
+}
+
+/**
+ * The company WhatsApp line plus every active branch with its own number, without duplicates.
+ *
+ * @return array<int, array{label: string, phone: string, url: string}>
+ */
+function whatsapp_contacts(): array
+{
+    static $contacts = null;
+
+    if ($contacts !== null) {
+        return $contacts;
+    }
+
+    $candidates = [['label' => company_name(), 'phone' => (string) ($_ENV['WHATSAPP_NUMBER'] ?? '') ?: company_phone()]];
+
+    try {
+        foreach ((new Location())->all(true) as $location) {
+            if (!empty($location['phone'])) {
+                $candidates[] = ['label' => $location['name'], 'phone' => $location['phone']];
+            }
+        }
+    } catch (Throwable $exception) {
+        // Branch numbers are optional; the company line is enough.
+    }
+
+    $contacts = [];
+    foreach ($candidates as $candidate) {
+        $number = whatsapp_number($candidate['phone']);
+        if ($number !== '' && !isset($contacts[$number])) {
+            $contacts[$number] = $candidate + ['url' => whatsapp_url('', $candidate['phone'])];
+        }
+    }
+
+    return $contacts = array_values($contacts);
+}
+
 function category_icon(string $category): string
 {
     $category = strtolower($category);

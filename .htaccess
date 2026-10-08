@@ -1,0 +1,19 @@
+# Only the public/ folder (and the root redirect) may be reached over the web.
+# Everything else - .env, .git, app/, database/, tests/, tools/, storage/ - is private.
+# On a production server, point the site's DocumentRoot at public/ instead.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(index\.php)?$ - [L]
+    RewriteRule ^public(/.*)?$ - [L]
+    RewriteRule ^ - [F]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    Require all denied
+    <FilesMatch "^(index\.php)?$">
+        Require all granted
+    </FilesMatch>
+</IfModule>

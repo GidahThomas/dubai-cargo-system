@@ -125,7 +125,29 @@ class Shipment extends Model
             'created_by' => $createdBy,
         ]);
 
-        return (int) $this->db->lastInsertId();
+        $shipmentId = (int) $this->db->lastInsertId();
+        $this->recordEvent($shipmentId, ($data['status'] ?? null) ?: $status);
+
+        return $shipmentId;
+    }
+
+    /**
+     * Stages this shipment has reached, oldest first.
+     */
+    public function events(int $shipmentId): array
+    {
+        return $this->fetchAll(
+            'SELECT status, note, created_at FROM shipment_events WHERE shipment_id = :id ORDER BY created_at ASC, id ASC',
+            ['id' => $shipmentId]
+        );
+    }
+
+    private function recordEvent(int $shipmentId, string $status, ?string $note = null): void
+    {
+        $this->execute(
+            'INSERT INTO shipment_events (shipment_id, status, note) VALUES (:shipment_id, :status, :note)',
+            ['shipment_id' => $shipmentId, 'status' => $status, 'note' => $note !== null ? mb_substr($note, 0, 255) : null]
+        );
     }
 
     public function updateStatus(int $id, string $status, ?string $notes = null): bool
@@ -153,6 +175,10 @@ class Shipment extends Model
                 'status_for_date' => $status,
                 'notes' => $notes,
             ]);
+
+            if ($shipment['status'] !== $status) {
+                $this->recordEvent($id, $status);
+            }
 
             $orderStatus = $this->orderStatusForShipment($status);
 

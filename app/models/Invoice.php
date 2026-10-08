@@ -435,6 +435,7 @@ class Invoice extends Model
                         'UPDATE inventory SET quantity = quantity + :quantity WHERE product_id = :product_id AND location_id = :location_id',
                         ['quantity' => $quantity, 'product_id' => $productId, 'location_id' => $locationId]
                     );
+                    StockAlert::check($productId, (int) $locationId);
                     $this->execute(
                         'INSERT INTO stock_entries (product_id, location_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
                          VALUES (:product_id, :location_id, :quantity, 0, "Invoice", CURRENT_DATE, NULL, :notes)',
@@ -799,6 +800,7 @@ class Invoice extends Model
                 'UPDATE inventory SET quantity = quantity - :quantity WHERE product_id = :product_id AND location_id = :location_id',
                 ['quantity' => $quantity, 'product_id' => $productId, 'location_id' => $locationId]
             );
+            StockAlert::check($productId, $locationId);
             $this->execute(
                 'INSERT INTO stock_entries (product_id, location_id, quantity, unit_cost, supplier_name, received_date, received_by, notes)
                  VALUES (:product_id, :location_id, :quantity, 0, "Invoice", CURRENT_DATE, :received_by, :notes)',

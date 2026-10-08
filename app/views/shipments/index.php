@@ -50,6 +50,7 @@
                 <span class="badge <?= h(badge_class($trackingResult['status'])) ?>"><?= h(readable_status($trackingResult['status'])) ?></span>
                 <p class="mb-0">Order <span class="code-text"><?= h($trackingResult['order_number']) ?></span> from <?= h($trackingResult['origin']) ?> to <?= h($trackingResult['destination']) ?>.</p>
             </div>
+            <?php require ROOT_PATH . '/app/views/partials/shipment-timeline.php'; ?>
         <?php else: ?>
             <div class="alert alert-warning mt-3 mb-0">No shipment was found for that tracking number.</div>
         <?php endif; ?>

@@ -1,5 +1,10 @@
 <?php
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 define('ROOT_PATH', dirname(__DIR__));
 define('APP_DEBUG', true);
 

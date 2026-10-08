@@ -2,6 +2,26 @@
 
 class NotificationController extends Controller
 {
+    public function index(): void
+    {
+        $this->requireLogin();
+
+        $this->view('notifications/index', [
+            'pageTitle' => 'Notifications',
+            'notifications' => (new Notification())->forUser(Auth::id(), 100),
+        ]);
+    }
+
+    public function readAll(): void
+    {
+        $this->requireLogin();
+        $this->validateCsrf();
+
+        (new Notification())->markAllRead(Auth::id());
+        flash('success', 'All notifications marked as read.');
+        $this->redirect('notifications');
+    }
+
     public function markRead(): void
     {
         $this->requireAjaxLogin();

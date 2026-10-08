@@ -15,12 +15,14 @@ class ProductController extends Controller
         ];
 
         if (!Auth::check()) {
-            $products = (new Product())->all($filters, true);
+            $productModel = new Product();
 
             $this->view('public/products/index', [
                 'layout' => 'public',
                 'pageTitle' => 'Products',
-                'products' => $products,
+                'products' => $productModel->all($filters, true),
+                'categories' => $productModel->categories(50),
+                'brands' => $productModel->brands(),
                 'filters' => $filters,
             ]);
             return;
@@ -207,6 +209,7 @@ class ProductController extends Controller
             'name' => $this->cleanString($this->post('name')),
             'category' => $this->cleanString($this->post('category')),
             'brand' => $this->cleanString($this->post('brand')),
+            'country_of_origin' => mb_substr($this->cleanString($this->post('country_of_origin')), 0, 80),
             'description' => $this->cleanString($this->post('description')),
             'specifications' => $this->cleanString($this->post('specifications')),
             'price' => (float) $this->post('price', 0),

@@ -46,6 +46,9 @@ foreach ($galleryImages as $image) {
             <?php if (!empty($product['sku'])): ?>
                 <span class="code-text"><?= h($product['sku']) ?></span>
             <?php endif; ?>
+            <?php if (!empty($product['country_of_origin'])): ?>
+                <span class="text-muted"><i class="bi bi-globe2"></i> Imported from <?= h($product['country_of_origin']) ?></span>
+            <?php endif; ?>
         </div>
 
         <?php if (!empty($product['description'])): ?>
@@ -59,6 +62,18 @@ foreach ($galleryImages as $image) {
             </section>
         <?php endif; ?>
 
+        <?php if (Auth::role() === 'customer' && (int) ($product['quantity'] ?? 0) > 0): ?>
+            <form method="post" action="<?= h(url('cart/add')) ?>" class="add-to-cart-form add-to-cart-lg mt-4">
+                <?= Auth::csrfField() ?>
+                <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                <input type="hidden" name="return_to" value="cart">
+                <input type="number" class="form-control" name="quantity" value="1" min="1" max="<?= min(99, (int) $product['quantity']) ?>" aria-label="Quantity">
+                <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-cart-plus"></i> Add to cart</button>
+            </form>
+        <?php elseif (!Auth::check()): ?>
+            <a class="btn btn-primary btn-lg mt-4" href="<?= h(url('login')) ?>"><i class="bi bi-box-arrow-in-right"></i> Log in to order online</a>
+        <?php endif; ?>
+
         <div class="public-hero-actions">
             <a class="btn btn-primary" href="<?= h(url('request-invoice') . '&product_id=' . (int) $product['id']) ?>">
                 <i class="bi bi-receipt-cutoff"></i> Request Invoice
@@ -66,6 +81,12 @@ foreach ($galleryImages as $image) {
             <a class="btn btn-outline-primary" href="<?= h(url('request-quotation') . '&product_id=' . (int) $product['id']) ?>">
                 <i class="bi bi-chat-square-text"></i> Request Quotation
             </a>
+            <?php $askUrl = whatsapp_url('Hello ' . company_name() . ", I'm interested in " . $product['name'] . ' (' . money($product['price']) . '). Is it available?'); ?>
+            <?php if ($askUrl !== ''): ?>
+                <a class="btn btn-whatsapp" href="<?= h($askUrl) ?>" target="_blank" rel="noopener">
+                    <i class="bi bi-whatsapp"></i> Ask on WhatsApp
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 </section>

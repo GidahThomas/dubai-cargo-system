@@ -29,6 +29,7 @@ class App
         'dashboard' => ['DashboardController', 'index'],
         'track-shipment' => ['PublicController', 'trackShipment'],
         'contact' => ['PublicController', 'contact'],
+        'gallery' => ['PublicController', 'gallery'],
         'request-quotation' => ['PublicController', 'requestQuotation'],
         'request-invoice' => ['PublicController', 'requestInvoice'],
     ];

@@ -4,7 +4,7 @@ class Notification extends Model
 {
     public function create(int $userId, string $title, string $message, string $type = 'info'): bool
     {
-        return $this->execute(
+        $created = $this->execute(
             'INSERT INTO notifications (user_id, title, message, type)
              VALUES (:user_id, :title, :message, :type)',
             [
@@ -14,6 +14,14 @@ class Notification extends Model
                 'type' => $type,
             ]
         );
+
+        // Customers also get the update on WhatsApp and/or SMS when those services are configured.
+        if ($created) {
+            WhatsApp::notifyUser($userId, $title, $message);
+            Sms::notifyUser($userId, $title, $message);
+        }
+
+        return $created;
     }
 
     public function forUser(int $userId, int $limit = 10): array
