@@ -44,13 +44,18 @@ $info = flash('info');
             <button class="public-nav-toggle" type="button" data-public-nav-toggle aria-label="Open navigation" aria-expanded="false">
                 <i class="bi bi-list"></i>
             </button>
+            <?php
+            $publicSection = explode('/', trim((string) ($_GET['url'] ?? ''), '/'))[0] ?: 'home';
+            $publicLinks = ['home' => 'Home', 'products' => 'Products', 'track-shipment' => 'Track Shipment', 'request-invoice' => 'Request Invoice'];
+            if (gallery_has_posts()) {
+                $publicLinks['gallery'] = 'Gallery';
+            }
+            $publicLinks['contact'] = 'Contact';
+            ?>
             <div class="public-nav-links" data-public-nav-links>
-                <a href="<?= h(url()) ?>">Home</a>
-                <a href="<?= h(url('products')) ?>">Products</a>
-                <a href="<?= h(url('track-shipment')) ?>">Track Shipment</a>
-                <a href="<?= h(url('request-invoice')) ?>">Request Invoice</a>
-                <a href="<?= h(url('gallery')) ?>">Gallery</a>
-                <a href="<?= h(url('contact')) ?>">Contact</a>
+                <?php foreach ($publicLinks as $route => $label): ?>
+                    <a class="<?= $publicSection === $route ? 'is-active' : '' ?>" href="<?= h($route === 'home' ? url() : url($route)) ?>" <?= $publicSection === $route ? 'aria-current="page"' : '' ?>><?= h($label) ?></a>
+                <?php endforeach; ?>
                 <a class="btn btn-light btn-sm" href="<?= h(url('request-quotation')) ?>">
                     <i class="bi bi-truck"></i> Get Quote
                 </a>

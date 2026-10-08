@@ -1,31 +1,63 @@
 <?php if (($layout ?? '') === 'public'): ?>
     </main>
+    <?php
+    try {
+        // Branches with their own address (one that just repeats the company address adds nothing).
+        $footerBranches = array_filter(
+            (new Location())->all(true),
+            static fn (array $branch): bool => !empty($branch['address']) && strcasecmp(trim($branch['address']), trim(company_address())) !== 0
+        );
+    } catch (Throwable) {
+        $footerBranches = [];
+    }
+    ?>
     <footer class="public-footer">
-        <div class="public-footer-top">
-            <div class="public-footer-brand">
-                <strong><?= h(company_name()) ?></strong>
-                <p>Fast, reliable cargo, invoice handling, and shipment tracking for modern businesses across Tanzania.</p>
-                <div class="public-footer-contact">
-                    <span><i class="bi bi-telephone"></i> <?= h(company_phone()) ?></span>
-                    <span><i class="bi bi-envelope"></i> <?= h(customer_contact_email()) ?></span>
-                    <?php foreach (whatsapp_contacts() as $contact): ?>
-                        <a href="<?= h($contact['url']) ?>" target="_blank" rel="noopener">
-                            <i class="bi bi-whatsapp"></i> <?= h($contact['phone']) ?> <small>(<?= h($contact['label']) ?>)</small>
-                        </a>
-                    <?php endforeach; ?>
-                    <?php if (company_instagram_url()): ?>
-                        <a href="<?= h(company_instagram_url()) ?>" target="_blank" rel="noopener">
-                            <i class="bi bi-instagram"></i> <?= h(company_social_handle()) ?>
-                        </a>
-                    <?php endif; ?>
-                </div>
+        <div class="site-footer-grid">
+            <div class="site-footer-col site-footer-about">
+                <a class="site-footer-brand" href="<?= h(url()) ?>">
+                    <img src="<?= h(public_url(company_logo_path())) ?>" alt="">
+                    <strong><?= h(company_name()) ?></strong>
+                </a>
+                <p>Genuine laptops, desktops and accessories, imported and delivered with full invoice and shipment tracking across Tanzania.</p>
+                <?php if (company_instagram_url()): ?>
+                    <a class="site-footer-social" href="<?= h(company_instagram_url()) ?>" target="_blank" rel="noopener">
+                        <i class="bi bi-instagram"></i> <?= h(company_social_handle() ?: 'Instagram') ?>
+                    </a>
+                <?php endif; ?>
             </div>
-            <div class="public-footer-links">
-                <a href="<?= h(url('track-shipment')) ?>">Track Shipment</a>
-                <a href="<?= h(url('request-invoice')) ?>">Request Invoice</a>
-                <a href="<?= h(url('gallery')) ?>">Gallery</a>
-                <a href="<?= h(url('contact')) ?>">Contact Us</a>
-                <a href="<?= h(url('login')) ?>">Sign In</a>
+
+            <nav class="site-footer-col" aria-label="Shop">
+                <h2>Shop</h2>
+                <a href="<?= h(url('products')) ?>">All products</a>
+                <?php if (gallery_has_posts()): ?>
+                    <a href="<?= h(url('gallery')) ?>">Gallery</a>
+                <?php endif; ?>
+                <a href="<?= h(url('request-quotation')) ?>">Get a quote</a>
+                <a href="<?= h(url('request-invoice')) ?>">Request an invoice</a>
+                <a href="<?= h(url('track-shipment')) ?>">Track a shipment</a>
+            </nav>
+
+            <div class="site-footer-col">
+                <h2>Contact</h2>
+                <a href="tel:<?= h(preg_replace('/\s+/', '', company_phone())) ?>"><i class="bi bi-telephone"></i> <?= h(company_phone()) ?></a>
+                <a href="mailto:<?= h(customer_contact_email()) ?>"><i class="bi bi-envelope"></i> <?= h(customer_contact_email()) ?></a>
+                <?php foreach (whatsapp_contacts() as $contact): ?>
+                    <a href="<?= h($contact['url']) ?>" target="_blank" rel="noopener">
+                        <i class="bi bi-whatsapp"></i> <?= h($contact['phone']) ?> <small><?= h($contact['label']) ?></small>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="site-footer-col">
+                <h2>Visit us</h2>
+                <?php if (company_address()): ?>
+                    <span><i class="bi bi-geo-alt"></i> <?= h(company_address()) ?></span>
+                <?php endif; ?>
+                <?php foreach ($footerBranches as $branch): ?>
+                    <span><i class="bi bi-shop"></i> <?= h($branch['name']) ?><small><?= h($branch['address']) ?></small></span>
+                <?php endforeach; ?>
+                <a href="<?= h(url('contact')) ?>"><i class="bi bi-chat-dots"></i> Send us a message</a>
+                <a href="<?= h(url('login')) ?>"><i class="bi bi-person"></i> Sign in or create an account</a>
             </div>
         </div>
         <div class="public-footer-bottom">

@@ -3933,3 +3933,325 @@ body.app-body .form-select {
     background: #000;
     object-fit: cover;
 }
+
+/* =====================================================================
+   Public site layout polish
+   ===================================================================== */
+
+/* Footer always sits at the bottom, even on short pages. */
+body.public-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+body.public-body > .public-main {
+    flex: 1 0 auto;
+}
+
+body.public-body > .public-footer {
+    flex-shrink: 0;
+}
+
+/* Current page in the top menu. */
+.public-nav-links a.is-active:not(.btn) {
+    color: #fff;
+}
+
+.public-nav-links a.is-active:not(.btn)::after {
+    transform: scaleX(1);
+}
+
+/* One heading size for every inner page (matches the catalogue and gallery). */
+.public-page-heading {
+    padding: 8px 0 4px;
+    margin-bottom: 22px;
+}
+
+.public-page-heading h1 {
+    font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+    line-height: 1.15;
+}
+
+.public-page-heading p {
+    margin-top: 8px;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Footer: About, Shop, Contact, Visit us. */
+.site-footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1.2fr 1.2fr;
+    gap: 32px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.site-footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.site-footer-col h2 {
+    margin: 0 0 4px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.site-footer-col a,
+.site-footer-col span {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    color: #cbd5e1;
+    font-size: 0.92rem;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.site-footer-col a:hover {
+    color: #fff;
+}
+
+.site-footer-col i {
+    flex: 0 0 auto;
+    color: #5eead4;
+}
+
+.site-footer-col small {
+    color: #94a3b8;
+    font-size: 0.78rem;
+}
+
+.site-footer-col span small {
+    display: block;
+}
+
+.site-footer-col span:has(small) {
+    flex-wrap: wrap;
+}
+
+.site-footer-brand {
+    align-items: center !important;
+    gap: 10px !important;
+    color: #fff !important;
+}
+
+.site-footer-brand img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #fff;
+    object-fit: contain;
+}
+
+.site-footer-brand strong {
+    font-size: 1.1rem;
+}
+
+.site-footer-about p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.public-footer-bottom {
+    padding-top: 18px;
+    border-top: 0;
+}
+
+/* Home: featured products use the catalogue cards; 4 across. */
+.home-featured-cards .catalog-card-media {
+    min-height: 160px;
+}
+
+/* Login: sign-up prompt. */
+.auth-register-prompt {
+    margin: 16px 0 4px;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.auth-register-prompt a {
+    font-weight: 700;
+}
+
+/* Request invoice: product picker on one line. */
+.invoice-product-picker {
+    flex-wrap: nowrap;
+}
+
+.invoice-product-picker .form-select {
+    flex: 1 1 auto;
+}
+
+@media (max-width: 991.98px) {
+    .site-footer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .site-footer-about {
+        grid-column: 1 / -1;
+    }
+
+    .invoice-totals-panel {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .site-footer-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    /* Two compact category tiles per row instead of eight tall rows. */
+    .home-category-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .home-category-card {
+        padding: 14px;
+        min-height: 0;
+    }
+
+    .home-category-card .feature-icon {
+        width: 34px;
+        height: 34px;
+    }
+
+    /* Trust badges as an even 2 x 2 grid. */
+    .home-trust-inner {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 10px;
+        font-size: 0.72rem;
+    }
+
+    .home-trust-inner div {
+        justify-content: flex-start;
+    }
+
+    .home-service-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .home-service-card {
+        padding: 14px;
+    }
+
+    .home-service-card h5 {
+        font-size: 0.95rem;
+    }
+
+    .home-service-card p {
+        font-size: 0.82rem;
+    }
+
+    .invoice-product-picker {
+        flex-wrap: wrap;
+    }
+
+    .invoice-totals-panel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .invoice-totals-panel .invoice-total-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .invoice-builder .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Polish round 2 */
+#featured-products {
+    margin-bottom: 40px;
+}
+
+.auth-register-prompt a {
+    color: var(--color-primary);
+}
+
+.home-service-card p {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+    .home-featured-cards .catalog-card-media,
+    .catalog-cards .catalog-card:not(.is-large) .catalog-card-media {
+        min-height: 110px;
+        padding: 12px;
+    }
+
+    /* Two-line names on phones instead of cutting them off after a few words. */
+    .catalog-card-name {
+        display: -webkit-box;
+        white-space: normal;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        font-size: 0.9rem;
+        line-height: 1.3;
+    }
+
+    .catalog-card-body small {
+        font-size: 0.68rem;
+    }
+}
+
+.product-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.product-back-link:hover {
+    color: var(--color-primary);
+}
+
+@media (max-width: 640px) {
+    /* Product page: one full-width button per row. */
+    .public-detail-content .public-hero-actions {
+        display: grid;
+        gap: 10px;
+    }
+
+    .public-detail-content .public-hero-actions .btn,
+    .public-detail-content > .btn-lg,
+    .public-detail-content .add-to-cart-lg {
+        width: 100%;
+    }
+
+    .public-detail-content .add-to-cart-lg .btn {
+        flex: 1;
+    }
+}
+
+@media (max-width: 640px) {
+    .public-tracking-result {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .public-tracking-result > div {
+        min-width: 0;
+        padding: 12px;
+        overflow-wrap: anywhere;
+    }
+}

@@ -9,7 +9,7 @@
 
     <div class="auth-form-heading">
         <h2>Welcome Back</h2>
-        <p>Sign in with your team email to manage orders, inventory, and customers.</p>
+        <p>Sign in to order online and track your shipments, or to manage the store.</p>
     </div>
 
     <form method="post" action="<?= h(url('login')) ?>" class="needs-validation" novalidate>
@@ -19,7 +19,7 @@
             <label for="email" class="form-label">Email address</label>
             <div class="input-icon-group">
                 <i class="bi bi-envelope"></i>
-                <input type="email" class="form-control" id="email" name="email" placeholder="you@yourbusiness.test" required autofocus>
+                <input type="email" class="form-control" id="email" name="email" placeholder="you@example.com" required autofocus>
             </div>
             <div class="invalid-feedback">A valid email address is required.</div>
         </div>
@@ -37,6 +37,8 @@
             <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
         </button>
     </form>
+
+    <p class="auth-register-prompt">New customer? <a href="<?= h(url('register')) ?>">Create an account</a> to order online and track your shipments.</p>
 
     <div class="auth-links">
         <a href="<?= h(url()) ?>"><i class="bi bi-arrow-left"></i> Continue to public website</a>

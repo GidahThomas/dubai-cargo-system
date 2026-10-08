@@ -295,6 +295,24 @@ function company_instagram_url(): string
 }
 
 /**
+ * Whether the public Gallery has anything to show (its menu links are hidden until it does).
+ */
+function gallery_has_posts(): bool
+{
+    static $hasPosts = null;
+
+    if ($hasPosts === null) {
+        try {
+            $hasPosts = (int) Database::connect()->query('SELECT COUNT(*) FROM instagram_posts WHERE is_visible = 1')->fetchColumn() > 0;
+        } catch (Throwable) {
+            $hasPosts = false;
+        }
+    }
+
+    return $hasPosts;
+}
+
+/**
  * Normalises a phone number to WhatsApp's international digits-only format,
  * e.g. "0652 532 646" -> "255652532646". Returns '' when it cannot be a valid number.
  */

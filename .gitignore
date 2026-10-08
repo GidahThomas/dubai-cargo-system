@@ -21,3 +21,6 @@ storage/backups/
 # Logs
 storage/logs/*
 !storage/logs/.gitkeep
+
+# Local Java runtime (not part of the web app; 370 MB)
+app/config/oracleJdk-27/

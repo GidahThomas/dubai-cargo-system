@@ -5,7 +5,7 @@ class PublicController extends Controller
     public function home(): void
     {
         $productModel = new Product();
-        $products = array_slice($productModel->all([], true), 0, 6);
+        $products = $productModel->all([], true, null, 8);
         $categories = $productModel->categories(8);
 
         $this->view('public/home', [

@@ -84,41 +84,26 @@ $heroCategories = array_slice($categories, 0, 4);
         <a class="btn btn-outline-primary" href="<?= h(url('products')) ?>">View All</a>
     </div>
 
-    <div class="home-product-slider" data-home-slider>
-        <div class="home-product-track" data-slider-track>
-            <?php foreach ($products as $product): ?>
-                <article class="public-product-card home-slide">
-                    <a class="public-product-image" href="<?= h(url('products/show/' . $product['id'])) ?>">
-                        <?php if (!empty($product['image'])): ?>
-                            <img src="<?= h(Thumbnail::url($product['image'])) ?>" alt="<?= h($product['name']) ?>" loading="lazy">
-                        <?php else: ?>
-                            <span><i class="bi <?= h(category_icon($product['category'] ?? '')) ?>"></i></span>
-                        <?php endif; ?>
-                        <span class="badge-price"><?= h(money($product['price'])) ?></span>
-                    </a>
-                    <div>
-                        <small class="code-text"><?= h($product['sku'] ?? 'DCF-PRODUCT') ?></small>
-                        <h3><a href="<?= h(url('products/show/' . $product['id'])) ?>"><?= h($product['name']) ?></a></h3>
-                        <p><?= h($product['brand']) ?> / <?= h($product['category']) ?></p>
-                    </div>
-                    <div class="public-product-meta">
-                        <span class="<?= (int) ($product['quantity'] ?? 0) > 0 ? 'text-success' : 'text-muted' ?> fw-semibold">
-                            <?= (int) ($product['quantity'] ?? 0) > 0 ? 'In Stock' : 'Made to Order' ?>
-                        </span>
-                        <a class="btn btn-sm btn-outline-brand" href="<?= h(url('products/show/' . $product['id'])) ?>">
-                            <i class="bi bi-eye"></i> View
-                        </a>
-                    </div>
-                </article>
-            <?php endforeach; ?>
-        </div>
-        <button class="home-slider-arrow home-slider-prev" type="button" data-slider-prev aria-label="Previous products">
-            <i class="bi bi-chevron-left"></i>
-        </button>
-        <button class="home-slider-arrow home-slider-next" type="button" data-slider-next aria-label="Next products">
-            <i class="bi bi-chevron-right"></i>
-        </button>
-        <div class="home-slider-dots" data-slider-dots></div>
+    <div class="catalog-cards home-featured-cards">
+        <?php foreach ($products as $product): ?>
+            <a class="catalog-card" href="<?= h(url('products/show/' . $product['id'])) ?>">
+                <?php if ((int) ($product['quantity'] ?? 0) <= 0): ?>
+                    <span class="catalog-tag is-order">Made to Order</span>
+                <?php endif; ?>
+                <span class="catalog-card-media">
+                    <?php if (!empty($product['image'])): ?>
+                        <img src="<?= h(Thumbnail::url($product['image'])) ?>" alt="<?= h($product['name']) ?>" loading="lazy">
+                    <?php else: ?>
+                        <i class="bi <?= h(category_icon($product['category'] ?? '')) ?>" aria-hidden="true"></i>
+                    <?php endif; ?>
+                </span>
+                <span class="catalog-card-body">
+                    <small><?= h($product['category']) ?> &middot; <?= h($product['brand']) ?></small>
+                    <strong class="catalog-card-name" title="<?= h($product['name']) ?>"><?= h($product['name']) ?></strong>
+                    <span class="catalog-card-price"><?= h(money($product['price'])) ?></span>
+                </span>
+            </a>
+        <?php endforeach; ?>
     </div>
 </section>
 

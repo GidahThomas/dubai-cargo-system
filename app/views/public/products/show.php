@@ -12,6 +12,10 @@ foreach ($galleryImages as $image) {
 }
 ?>
 
+<a class="product-back-link" href="<?= h(url('products') . (!empty($product['category']) ? '&category=' . urlencode($product['category']) : '')) ?>">
+    <i class="bi bi-arrow-left"></i> Back to <?= h($product['category'] ?: 'products') ?>
+</a>
+
 <section class="public-product-detail">
     <div>
         <div class="public-detail-media" data-product-carousel>
