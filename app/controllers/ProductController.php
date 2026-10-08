@@ -15,16 +15,7 @@ class ProductController extends Controller
         ];
 
         if (!Auth::check()) {
-            $productModel = new Product();
-
-            $this->view('public/products/index', [
-                'layout' => 'public',
-                'pageTitle' => 'Products',
-                'products' => $productModel->all($filters, true),
-                'categories' => $productModel->categories(50),
-                'brands' => $productModel->brands(),
-                'filters' => $filters,
-            ]);
+            $this->publicCatalogue($filters);
             return;
         }
 
@@ -36,6 +27,51 @@ class ProductController extends Controller
             'products' => $products,
             'filters' => $filters,
             'activeLocation' => $activeLocationId !== null ? (new Location())->find($activeLocationId) : null,
+        ]);
+    }
+
+    /**
+     * Public catalogue. With no category or filter: one section per category (capped, with
+     * "View all"). With a category, search or filter: the matches, 24 per page.
+     */
+    private function publicCatalogue(array $filters): void
+    {
+        $perPage = 24;
+        $productModel = new Product();
+        $categories = $productModel->categories(50);
+        $browsingAll = ($filters['category'] ?? '') === '' && ($filters['search'] ?? '') === '' && ($filters['brand'] ?? '') === ''
+            && (string) ($filters['min_price'] ?? '') === '' && (string) ($filters['max_price'] ?? '') === '';
+
+        if ($browsingAll) {
+            $products = $productModel->all($filters, true);
+            $total = count($products);
+            $sections = Product::catalogGroups($products, $categories);
+            $page = $pages = 1;
+        } else {
+            $total = $productModel->countAll($filters, true);
+            $pages = max(1, (int) ceil($total / $perPage));
+            $page = min($pages, max(1, (int) $this->get('page', 1)));
+            $products = $productModel->all($filters, true, null, $perPage, ($page - 1) * $perPage);
+            $sections = $products ? [[
+                'name' => ($filters['category'] ?? '') !== '' ? $filters['category'] : 'Results',
+                'products' => $products,
+                'total' => $total,
+                'featured' => ($filters['category'] ?? '') !== '' && $page === 1,
+                'mixed' => ($filters['category'] ?? '') === '',
+            ]] : [];
+        }
+
+        $this->view('public/products/index', [
+            'layout' => 'public',
+            'pageTitle' => 'Products',
+            'sections' => $sections,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'browsingAll' => $browsingAll,
+            'categories' => $categories,
+            'brands' => $productModel->brands(),
+            'filters' => $filters,
         ]);
     }
 
@@ -255,6 +291,7 @@ class ProductController extends Controller
         $target = $uploadDir . '/' . $fileName;
 
         if (move_uploaded_file($_FILES['image_file']['tmp_name'], $target)) {
+            Thumbnail::make('uploads/' . $fileName);
             return 'uploads/' . $fileName;
         }
 
@@ -289,6 +326,7 @@ class ProductController extends Controller
             $target = $uploadDir . '/' . $fileName;
 
             if (move_uploaded_file($_FILES['gallery_files']['tmp_name'][$index], $target)) {
+                Thumbnail::make('uploads/' . $fileName);
                 $images[] = 'uploads/' . $fileName;
             }
         }
@@ -370,6 +408,7 @@ class ProductController extends Controller
         $target = $uploadDir . '/' . $fileName;
 
         if (move_uploaded_file((string) ($file['tmp_name'] ?? ''), $target)) {
+            Thumbnail::make('uploads/' . $fileName);
             return 'uploads/' . $fileName;
         }
 

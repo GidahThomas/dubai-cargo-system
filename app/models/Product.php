@@ -2,7 +2,75 @@
 
 class Product extends Model
 {
-    public function all(array $filters = [], bool $activeOnly = false, ?int $locationId = null): array
+    /**
+     * @param int|null $limit page size; null returns every match
+     */
+    public function all(array $filters = [], bool $activeOnly = false, ?int $locationId = null, ?int $limit = null, int $offset = 0): array
+    {
+        [$sql, $params] = $this->listQuery($filters, $activeOnly, $locationId);
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
+     * Groups products into catalogue sections, in the order of $categories (largest first).
+     * A category with at least $featureMinimum products gets its own section (first product shown
+     * large), capped at $perSection; smaller categories share one "More Products" section capped at
+     * $moreLimit. Each section reports its full 'total' so the page can offer "View all".
+     *
+     * @return array<int, array{name: string, products: array, total: int, featured: bool, mixed: bool}>
+     */
+    public static function catalogGroups(array $products, array $categories, int $featureMinimum = 3, int $perSection = 7, int $moreLimit = 12): array
+    {
+        $key = static fn (?string $name): string => strtolower(trim((string) $name));
+        $groups = [];
+        foreach ($categories as $category) {
+            $groups[$key($category['name'])] = ['name' => $category['name'], 'products' => []];
+        }
+        foreach ($products as $product) {
+            $groupKey = $key($product['category'] ?? '');
+            $groups[$groupKey] ??= ['name' => ($product['category'] ?? '') ?: 'Other', 'products' => []];
+            $groups[$groupKey]['products'][] = $product;
+        }
+
+        $sections = [];
+        $small = [];
+        foreach ($groups as $group) {
+            $count = count($group['products']);
+            if ($count === 0) {
+                continue;
+            }
+            if ($count >= $featureMinimum) {
+                $sections[] = ['name' => $group['name'], 'products' => array_slice($group['products'], 0, $perSection), 'total' => $count, 'featured' => true, 'mixed' => false];
+            } else {
+                $small[] = $group;
+            }
+        }
+
+        if (count($small) === 1 && !$sections) {
+            $only = $small[0];
+            $sections[] = ['name' => $only['name'], 'products' => $only['products'], 'total' => count($only['products']), 'featured' => false, 'mixed' => false];
+        } elseif ($small) {
+            $merged = array_merge(...array_column($small, 'products'));
+            $sections[] = ['name' => $sections ? 'More Products' : 'All Products', 'products' => array_slice($merged, 0, $moreLimit), 'total' => count($merged), 'featured' => false, 'mixed' => true];
+        }
+
+        return $sections;
+    }
+
+    public function countAll(array $filters = [], bool $activeOnly = false, ?int $locationId = null): int
+    {
+        [$sql, $params] = $this->listQuery($filters, $activeOnly, $locationId);
+        $row = $this->fetch('SELECT COUNT(*) AS total FROM (' . $sql . ') matches', $params);
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    private function listQuery(array $filters, bool $activeOnly, ?int $locationId): array
     {
         $joinCondition = 'i.product_id = p.id';
         $groupBy = '';
@@ -69,9 +137,9 @@ class Product extends Model
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
-        $sql .= $groupBy . ' ORDER BY p.created_at DESC';
+        $sql .= $groupBy . ' ORDER BY p.created_at DESC, p.id DESC';
 
-        return $this->fetchAll($sql, $params);
+        return [$sql, $params];
     }
 
     public function find(int $id, ?int $locationId = null): ?array

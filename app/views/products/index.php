@@ -74,7 +74,7 @@
                     <td>
                         <div class="product-cell">
                             <?php if (!empty($product['image'])): ?>
-                                <img src="<?= h(public_url($product['image'])) ?>" alt="<?= h($product['name']) ?>">
+                                <img src="<?= h(Thumbnail::url($product['image'])) ?>" alt="<?= h($product['name']) ?>">
                             <?php else: ?>
                                 <span class="product-placeholder"><i class="bi bi-laptop"></i></span>
                             <?php endif; ?>

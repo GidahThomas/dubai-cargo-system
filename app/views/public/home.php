@@ -90,7 +90,7 @@ $heroCategories = array_slice($categories, 0, 4);
                 <article class="public-product-card home-slide">
                     <a class="public-product-image" href="<?= h(url('products/show/' . $product['id'])) ?>">
                         <?php if (!empty($product['image'])): ?>
-                            <img src="<?= h(public_url($product['image'])) ?>" alt="<?= h($product['name']) ?>">
+                            <img src="<?= h(Thumbnail::url($product['image'])) ?>" alt="<?= h($product['name']) ?>" loading="lazy">
                         <?php else: ?>
                             <span><i class="bi <?= h(category_icon($product['category'] ?? '')) ?>"></i></span>
                         <?php endif; ?>

@@ -66,7 +66,7 @@
                     <tr>
                         <td>
                             <?php if ($cover && $cover['media_type'] === 'image'): ?>
-                                <img class="instagram-thumb" src="<?= h(public_url($cover['media_path'])) ?>" alt="" loading="lazy">
+                                <img class="instagram-thumb" src="<?= h(Thumbnail::url($cover['media_path'])) ?>" alt="" loading="lazy">
                             <?php else: ?>
                                 <span class="instagram-thumb is-video"><i class="bi bi-play-btn"></i></span>
                             <?php endif; ?>

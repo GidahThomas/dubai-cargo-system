@@ -42,7 +42,7 @@
                                         <td>
                                             <div class="d-flex align-items-center gap-3">
                                                 <?php if (!empty($product['image'])): ?>
-                                                    <img class="cart-thumb" src="<?= h(public_url($product['image'])) ?>" alt="">
+                                                    <img class="cart-thumb" src="<?= h(Thumbnail::url($product['image'])) ?>" alt="">
                                                 <?php else: ?>
                                                     <span class="cart-thumb"><i class="bi <?= h(category_icon($product['category'] ?? '')) ?>"></i></span>
                                                 <?php endif; ?>

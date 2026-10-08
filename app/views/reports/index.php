@@ -14,6 +14,37 @@
     </div>
 </div>
 
+<section class="panel mb-4 d-print-none">
+    <div class="panel-header">
+        <h2><i class="bi bi-file-earmark-spreadsheet"></i> Download for Excel</h2>
+    </div>
+    <form method="get" action="<?= h(url()) ?>" class="row g-3 align-items-end" id="reportExportForm">
+        <input type="hidden" name="url" value="reports/export/sales" id="reportExportUrl">
+        <div class="col-md-3">
+            <label class="form-label" for="exportReport">Report</label>
+            <select class="form-select" id="exportReport" onchange="document.getElementById('reportExportUrl').value = 'reports/export/' + this.value">
+                <?php foreach ($exportReports as $key => $label): ?>
+                    <option value="<?= h($key) ?>"><?= h($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="exportFrom">From</label>
+            <input type="date" class="form-control" id="exportFrom" name="date_from" value="<?= h(date('Y-m-01')) ?>">
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="exportTo">To</label>
+            <input type="date" class="form-control" id="exportTo" name="date_to" value="<?= h(date('Y-m-d')) ?>">
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-primary w-100" type="submit"><i class="bi bi-download"></i> Download CSV</button>
+        </div>
+        <div class="col-12">
+            <small class="text-muted">Opens in Excel. Uses the branch selected at the top of the page; inventory is a current snapshot and ignores the dates.</small>
+        </div>
+    </form>
+</section>
+
 <div class="stats-grid">
     <div class="stat-card">
         <span class="stat-icon"><i class="bi bi-cash-stack"></i></span>

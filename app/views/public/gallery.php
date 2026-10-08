@@ -35,7 +35,7 @@
                                     <?php if ($item['media_type'] === 'video'): ?>
                                         <video src="<?= h(public_url($item['media_path'])) ?>" controls preload="metadata" playsinline></video>
                                     <?php else: ?>
-                                        <img src="<?= h(public_url($item['media_path'])) ?>" alt="<?= h(mb_substr((string) $post['caption'], 0, 80)) ?>" loading="lazy">
+                                        <img src="<?= h(Thumbnail::url($item['media_path'])) ?>" alt="<?= h(mb_substr((string) $post['caption'], 0, 80)) ?>" loading="lazy">
                                     <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
@@ -53,7 +53,7 @@
                     <?php if ($item['media_type'] === 'video'): ?>
                         <video src="<?= h(public_url($item['media_path'])) ?>" controls preload="metadata" playsinline></video>
                     <?php else: ?>
-                        <img src="<?= h(public_url($item['media_path'])) ?>" alt="<?= h(mb_substr((string) $post['caption'], 0, 80)) ?>" loading="lazy">
+                        <img src="<?= h(Thumbnail::url($item['media_path'])) ?>" alt="<?= h(mb_substr((string) $post['caption'], 0, 80)) ?>" loading="lazy">
                     <?php endif; ?>
                 <?php endif; ?>
             </div>

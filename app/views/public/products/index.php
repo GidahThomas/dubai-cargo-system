@@ -2,34 +2,18 @@
 $activeCategory = trim((string) ($filters['category'] ?? ''));
 $categoryKey = static fn (?string $name): string => strtolower(trim((string) $name));
 $productsUrl = static fn (string $category = ''): string => url('products') . ($category !== '' ? '&category=' . urlencode($category) : '');
+$pageUrl = static function (int $page) use ($filters): string {
+    $query = array_filter([
+        'category' => $filters['category'] ?? '',
+        'search' => $filters['search'] ?? '',
+        'brand' => $filters['brand'] ?? '',
+        'min_price' => (string) ($filters['min_price'] ?? ''),
+        'max_price' => (string) ($filters['max_price'] ?? ''),
+        'page' => $page > 1 ? (string) $page : '',
+    ], static fn (string $value): bool => $value !== '');
 
-// Group products by category, following the category order (most items first).
-$groups = [];
-foreach ($categories as $cat) {
-    $groups[$categoryKey($cat['name'])] = ['name' => $cat['name'], 'products' => []];
-}
-foreach ($products as $product) {
-    $key = $categoryKey($product['category'] ?? '');
-    if (!isset($groups[$key])) {
-        $groups[$key] = ['name' => $product['category'] ?: 'Other', 'products' => []];
-    }
-    $groups[$key]['products'][] = $product;
-}
-$groups = array_filter($groups, static fn (array $group): bool => $group['products'] !== []);
-
-// Categories too small for a featured layout are combined into one "More Products" grid.
-$featureMinimum = 3;
-if ($activeCategory === '') {
-    $smallGroups = array_filter($groups, static fn (array $group): bool => count($group['products']) < $featureMinimum);
-    if (count($smallGroups) > 1) {
-        $groups = array_diff_key($groups, $smallGroups);
-        $groups['__more'] = [
-            'name' => $groups ? 'More Products' : 'All Products',
-            'products' => array_merge(...array_column($smallGroups, 'products')),
-            'mixed' => true,
-        ];
-    }
-}
+    return url('products') . ($query ? '&' . http_build_query($query) : '');
+};
 
 $stockTag = static function (array $product): ?array {
     $quantity = (int) ($product['quantity'] ?? 0);
@@ -45,8 +29,8 @@ $stockTag = static function (array $product): ?array {
 <section class="catalog-heading">
     <div>
         <span class="public-kicker">Product catalogue</span>
-        <h1><?= $activeCategory !== '' ? h($activeCategory) : 'All Products' ?></h1>
-        <p><?= count($products) ?> product<?= count($products) === 1 ? '' : 's' ?>, priced in <?= h(default_currency_code()) ?>.</p>
+        <h1><?= $activeCategory !== '' ? h($activeCategory) : (($filters['search'] ?? '') !== '' ? 'Search results' : 'All Products') ?></h1>
+        <p><?= number_format($total) ?> product<?= $total === 1 ? '' : 's' ?>, priced in <?= h(default_currency_code()) ?>.</p>
     </div>
     <form class="catalog-search" method="get" action="<?= h(url()) ?>" role="search">
         <input type="hidden" name="url" value="products">
@@ -99,32 +83,33 @@ $stockTag = static function (array $product): ?array {
     <?php endif; ?>
 </form>
 
-<?php foreach ($groups as $group): ?>
+<?php foreach ($sections as $section): ?>
     <section class="catalog-group">
         <header class="catalog-group-header">
-            <h2><?= h($group['name']) ?> <small><?= count($group['products']) ?></small></h2>
-            <?php if ($activeCategory === '' && empty($group['mixed'])): ?>
-                <a href="<?= h($productsUrl($group['name'])) ?>">View All <?= h($group['name']) ?> <i class="bi bi-chevron-right"></i></a>
+            <h2><?= h($section['name']) ?> <small><?= (int) $section['total'] ?></small></h2>
+            <?php if ($browsingAll && !$section['mixed']): ?>
+                <a href="<?= h($productsUrl($section['name'])) ?>">View All <?= h($section['name']) ?> <i class="bi bi-chevron-right"></i></a>
+            <?php elseif ($browsingAll && $section['mixed'] && $section['total'] > count($section['products'])): ?>
+                <span class="text-muted small">Showing <?= count($section['products']) ?> of <?= (int) $section['total'] ?> &middot; pick a category above for more</span>
             <?php endif; ?>
         </header>
 
-        <?php $featured = empty($group['mixed']) && ($activeCategory !== '' || count($group['products']) >= $featureMinimum); ?>
         <div class="catalog-cards">
-            <?php foreach ($group['products'] as $index => $product): ?>
-                <?php $tag = $stockTag($product); $detailUrl = url('products/show/' . $product['id']); $isLarge = $featured && $index === 0; ?>
-                <a class="catalog-card <?= $isLarge ? 'is-large' : '' ?>" href="<?= h($detailUrl) ?>">
+            <?php foreach ($section['products'] as $index => $product): ?>
+                <?php $tag = $stockTag($product); $isLarge = $section['featured'] && $index === 0; ?>
+                <a class="catalog-card <?= $isLarge ? 'is-large' : '' ?>" href="<?= h(url('products/show/' . $product['id'])) ?>">
                     <?php if ($tag): ?>
                         <span class="catalog-tag <?= h($tag['class']) ?>"><?= h($tag['label']) ?></span>
                     <?php endif; ?>
                     <span class="catalog-card-media">
                         <?php if (!empty($product['image'])): ?>
-                            <img src="<?= h(public_url($product['image'])) ?>" alt="<?= h($product['name']) ?>" loading="lazy">
+                            <img src="<?= h(Thumbnail::url($product['image'])) ?>" alt="<?= h($product['name']) ?>" loading="lazy">
                         <?php else: ?>
                             <i class="bi <?= h(category_icon($product['category'] ?? '')) ?>" aria-hidden="true"></i>
                         <?php endif; ?>
                     </span>
                     <span class="catalog-card-body">
-                        <small><?= h(empty($group['mixed']) ? $product['brand'] : $product['category'] . ' · ' . $product['brand']) ?></small>
+                        <small><?= h($section['mixed'] ? $product['category'] . ' · ' . $product['brand'] : $product['brand']) ?></small>
                         <strong class="catalog-card-name" title="<?= h($product['name']) ?>"><?= h($product['name']) ?></strong>
                         <?php if ($isLarge && !empty($product['description'])): ?>
                             <span class="catalog-card-desc"><?= h($product['description']) ?></span>
@@ -137,7 +122,15 @@ $stockTag = static function (array $product): ?array {
     </section>
 <?php endforeach; ?>
 
-<?php if (!$products): ?>
+<?php if ($pages > 1): ?>
+    <nav class="catalog-pagination" aria-label="Product pages">
+        <a class="btn btn-outline-dark <?= $page <= 1 ? 'disabled' : '' ?>" href="<?= h($pageUrl($page - 1)) ?>" <?= $page <= 1 ? 'aria-disabled="true" tabindex="-1"' : '' ?>><i class="bi bi-chevron-left"></i> Previous</a>
+        <span>Page <?= $page ?> of <?= $pages ?></span>
+        <a class="btn btn-outline-dark <?= $page >= $pages ? 'disabled' : '' ?>" href="<?= h($pageUrl($page + 1)) ?>" <?= $page >= $pages ? 'aria-disabled="true" tabindex="-1"' : '' ?>>Next <i class="bi bi-chevron-right"></i></a>
+    </nav>
+<?php endif; ?>
+
+<?php if (!$sections): ?>
     <div class="panel public-empty-state mt-4">
         <strong>No products found.</strong>
         <span>Try another category or search, or <a href="<?= h(url('request-quotation')) ?>">request a quotation</a> for sourcing support.</span>
