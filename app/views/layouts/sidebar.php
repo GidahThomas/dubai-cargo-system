@@ -5,7 +5,6 @@ $currentRoute = trim((string) ($_GET['url'] ?? ''), '/') ?: 'dashboard';
 $staffRoles = Auth::staffRoles();
 $managerRoles = ['manager', 'admin'];
 
-$unreadNotifications = (new Notification())->unreadCount((int) Auth::id());
 $cartCount = $role === 'customer' ? CartController::count() : 0;
 
 $navSections = [
@@ -13,7 +12,6 @@ $navSections = [
         'title' => null,
         'items' => [
             ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'url' => 'dashboard', 'roles' => [...$staffRoles, 'customer']],
-            ['label' => 'Notifications', 'icon' => 'bi-bell', 'url' => 'notifications', 'roles' => [...$staffRoles, 'customer'], 'badge' => $unreadNotifications],
         ],
     ],
     [
@@ -103,49 +101,61 @@ foreach ($navSections as $sectionIndex => $section) {
     }
 }
 ?>
-<aside class="app-sidebar" id="appSidebar">
-    <div class="sidebar-user">
-        <div class="avatar"><?= h(strtoupper(substr($user['name'] ?? 'U', 0, 1))) ?></div>
-        <div>
-            <strong><?= h($user['name'] ?? '') ?></strong>
-            <small><?= h(readable_status($role)) ?></small>
-        </div>
+<aside class="app-sidebar" id="appSidebar" aria-label="Main menu">
+    <div class="sb-brand">
+        <a class="sb-brand-link" href="<?= h(url('dashboard')) ?>">
+            <img src="<?= h(public_url(company_logo_path())) ?>" alt="">
+            <span><?= h(company_name()) ?></span>
+        </a>
+        <button class="sb-icon-btn sb-collapse" type="button" data-sidebar-collapse aria-label="Collapse menu" title="Collapse menu">
+            <i class="bi bi-chevron-double-left"></i>
+        </button>
+        <button class="sb-icon-btn sb-close" type="button" data-sidebar-close aria-label="Close menu">
+            <i class="bi bi-x-lg"></i>
+        </button>
     </div>
 
-    <nav class="sidebar-nav" aria-label="Main navigation">
+    <nav class="sb-nav" aria-label="Main navigation">
         <?php foreach ($navSections as $section): ?>
             <?php if (!$section['items']) continue; ?>
-            <?php if ($section['title'] !== null): ?>
-                <span class="sidebar-section-title"><?= h($section['title']) ?></span>
-            <?php endif; ?>
-            <?php foreach ($section['items'] as $item): ?>
-                <?php $isActive = $item['url'] === $activeUrl; ?>
-                <a class="<?= $isActive ? 'is-active' : '' ?>" href="<?= h($item['href'] ?? url($item['url'])) ?>" title="<?= h($item['label']) ?>" <?= $isActive ? 'aria-current="page"' : '' ?>>
-                    <i class="bi <?= h($item['icon']) ?>"></i>
-                    <span><?= h($item['label']) ?></span>
-                    <?php if (!empty($item['badge'])): ?>
-                        <span class="sidebar-badge"><?= (int) $item['badge'] > 99 ? '99+' : (int) $item['badge'] ?></span>
-                    <?php endif; ?>
-                </a>
-                <?php if (!empty($item['children']) && $isActive): ?>
-                    <div class="sidebar-subnav">
-                        <?php foreach ($item['children'] as $child): ?>
-                            <a class="<?= $currentRoute === $child['url'] ? 'is-active' : '' ?>" href="<?= h(url($child['url'])) ?>">
-                                <?= h($child['label']) ?>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
+            <div class="sb-section">
+                <?php if ($section['title'] !== null): ?>
+                    <span class="sb-section-title"><?= h($section['title']) ?></span>
                 <?php endif; ?>
-            <?php endforeach; ?>
+                <?php foreach ($section['items'] as $item): ?>
+                    <?php $isActive = $item['url'] === $activeUrl; ?>
+                    <a class="sb-link <?= $isActive ? 'is-active' : '' ?>" href="<?= h($item['href'] ?? url($item['url'])) ?>" data-tooltip="<?= h($item['label']) ?>" <?= $isActive ? 'aria-current="page"' : '' ?>>
+                        <i class="bi <?= h($item['icon']) ?>" aria-hidden="true"></i>
+                        <span class="sb-label"><?= h($item['label']) ?></span>
+                        <?php if (!empty($item['badge'])): ?>
+                            <span class="sb-badge" aria-label="<?= (int) $item['badge'] ?>"><?= (int) $item['badge'] > 99 ? '99+' : (int) $item['badge'] ?></span>
+                        <?php endif; ?>
+                    </a>
+                    <?php if (!empty($item['children']) && $isActive): ?>
+                        <div class="sb-sub">
+                            <?php foreach ($item['children'] as $child): ?>
+                                <a class="<?= $currentRoute === $child['url'] ? 'is-active' : '' ?>" href="<?= h(url($child['url'])) ?>"><?= h($child['label']) ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
         <?php endforeach; ?>
     </nav>
 
-    <div class="sidebar-footer">
-        <a class="sidebar-footer-link <?= $currentRoute === 'users/password' ? 'is-active' : '' ?>" href="<?= h(url('users/password')) ?>">
-            <i class="bi bi-shield-lock"></i> Change password
+    <div class="sb-footer">
+        <div class="sb-user" data-tooltip="<?= h(($user['name'] ?? '') . ' · ' . readable_status($role)) ?>">
+            <span class="sb-avatar"><?= h(strtoupper(mb_substr($user['name'] ?? 'U', 0, 1))) ?></span>
+            <span class="sb-user-text">
+                <strong><?= h($user['name'] ?? '') ?></strong>
+                <small><?= h(readable_status($role)) ?></small>
+            </span>
+        </div>
+        <a class="sb-link sb-link-quiet <?= $currentRoute === 'users/password' ? 'is-active' : '' ?>" href="<?= h(url('users/password')) ?>" data-tooltip="Change password">
+            <i class="bi bi-shield-lock" aria-hidden="true"></i><span class="sb-label">Change password</span>
         </a>
-        <a class="btn btn-outline-light w-100" href="<?= h(url('logout')) ?>">
-            <i class="bi bi-box-arrow-right me-2"></i>Logout
+        <a class="sb-link sb-link-quiet sb-logout" href="<?= h(url('logout')) ?>" data-tooltip="Sign out">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span class="sb-label">Sign out</span>
         </a>
     </div>
 </aside>

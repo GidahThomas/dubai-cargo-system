@@ -26,28 +26,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
     const sidebarBackdrop = document.querySelector('[data-sidebar-backdrop]');
 
+    // Phones and tablets: the sidebar is a drawer that slides over the page.
     const setSidebarOpen = (open) => {
-        sidebar?.classList.toggle('is-open', open);
+        if (!sidebar) {
+            return;
+        }
+        sidebar.classList.toggle('is-open', open);
         sidebarBackdrop?.classList.toggle('is-open', open);
-        if (sidebarToggle) {
-            sidebarToggle.classList.toggle('is-open', open);
-            sidebarToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-            sidebarToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
-            sidebarToggle.querySelector('i')?.classList.replace(open ? 'bi-list' : 'bi-x-lg', open ? 'bi-x-lg' : 'bi-list');
+        document.body.classList.toggle('sidebar-drawer-open', open);
+        sidebarToggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) {
+            sidebar.querySelector('[data-sidebar-close]')?.focus();
+        } else if (document.activeElement && sidebar.contains(document.activeElement)) {
+            sidebarToggle?.focus();
         }
     };
     const closeSidebar = () => setSidebarOpen(false);
 
-    if (sidebar && sidebarToggle) {
-        sidebarToggle.addEventListener('click', () => setSidebarOpen(!sidebar.classList.contains('is-open')));
-    }
-
+    sidebarToggle?.addEventListener('click', () => setSidebarOpen(!sidebar?.classList.contains('is-open')));
+    sidebar?.querySelector('[data-sidebar-close]')?.addEventListener('click', closeSidebar);
     sidebarBackdrop?.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && sidebar?.classList.contains('is-open')) {
             closeSidebar();
         }
     });
+    // Picking a page closes the drawer straight away (feels instant on slow connections).
+    sidebar?.addEventListener('click', (event) => {
+        if (event.target.closest('a[href]') && sidebar.classList.contains('is-open')) {
+            closeSidebar();
+        }
+    });
+    // Rotating a tablet or widening the window past the drawer size resets it.
+    window.matchMedia('(min-width: 992px)').addEventListener?.('change', (event) => {
+        if (event.matches) {
+            closeSidebar();
+        }
+    });
+
+    // Desktop: collapse to an icon rail; the choice is remembered in this browser.
+    sidebar?.querySelector('[data-sidebar-collapse]')?.addEventListener('click', () => {
+        const collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+        try {
+            localStorage.setItem('dcf-sidebar', collapsed ? 'collapsed' : 'expanded');
+        } catch (error) {
+            // Private browsing: the choice just isn't remembered.
+        }
+        const button = sidebar.querySelector('[data-sidebar-collapse]');
+        button.setAttribute('aria-label', collapsed ? 'Expand menu' : 'Collapse menu');
+        button.title = collapsed ? 'Expand menu' : 'Collapse menu';
+    });
+    if (document.documentElement.classList.contains('sidebar-collapsed')) {
+        const button = sidebar?.querySelector('[data-sidebar-collapse]');
+        button?.setAttribute('aria-label', 'Expand menu');
+        if (button) {
+            button.title = 'Expand menu';
+        }
+    }
 
     const publicNavLinks = document.querySelector('[data-public-nav-links]');
     const publicNavToggle = document.querySelector('[data-public-nav-toggle]');
@@ -1035,3 +1070,41 @@ document.querySelectorAll('[data-compare-input]').forEach((compareInput) => {
     priceInput.addEventListener('input', update);
     compareInput.addEventListener('input', update);
 });
+
+/*
+ * Icon-rail tooltips: when the sidebar is collapsed to icons, show each item's name beside it.
+ * Positioned in JS because the scrolling menu would clip a CSS-only tooltip.
+ */
+(() => {
+    const sidebar = document.getElementById('appSidebar');
+    if (!sidebar) {
+        return;
+    }
+    let tip = null;
+    const hide = () => {
+        tip?.remove();
+        tip = null;
+    };
+    const show = (target) => {
+        hide();
+        if (sidebar.getBoundingClientRect().width > 120) {
+            return; // full sidebar: labels are already visible
+        }
+        const rect = target.getBoundingClientRect();
+        tip = document.createElement('div');
+        tip.className = 'sb-tooltip';
+        tip.setAttribute('role', 'tooltip');
+        tip.textContent = target.dataset.tooltip;
+        tip.style.left = (rect.right + 12) + 'px';
+        tip.style.top = (rect.top + rect.height / 2) + 'px';
+        document.body.appendChild(tip);
+    };
+    sidebar.querySelectorAll('[data-tooltip]').forEach((item) => {
+        item.addEventListener('mouseenter', () => show(item));
+        item.addEventListener('focus', () => show(item));
+        item.addEventListener('mouseleave', hide);
+        item.addEventListener('blur', hide);
+    });
+    sidebar.querySelector('.sb-nav')?.addEventListener('scroll', hide, { passive: true });
+    window.addEventListener('resize', hide);
+})();

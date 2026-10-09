@@ -57,7 +57,11 @@
                     <span><i class="bi bi-shop"></i> <?= h($branch['name']) ?><small><?= h($branch['address']) ?></small></span>
                 <?php endforeach; ?>
                 <a href="<?= h(url('contact')) ?>"><i class="bi bi-chat-dots"></i> Send us a message</a>
-                <a href="<?= h(url('login')) ?>"><i class="bi bi-person"></i> Sign in or create an account</a>
+                <?php if (Auth::check()): ?>
+                    <a href="<?= h(url('dashboard')) ?>"><i class="bi bi-person"></i> My account</a>
+                <?php else: ?>
+                    <a href="<?= h(url('login')) ?>"><i class="bi bi-person"></i> Sign in or create an account</a>
+                <?php endif; ?>
             </div>
         </div>
         <div class="public-footer-bottom">

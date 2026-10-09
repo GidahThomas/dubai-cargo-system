@@ -23,16 +23,21 @@ abstract class Controller
 
         require ROOT_PATH . '/app/views/layouts/header.php';
 
-        if (Auth::check()) {
+        // Public pages keep the public header and footer even for signed-in users;
+        // the sidebar and top bar belong to the signed-in app layout only.
+        $appShell = Auth::check() && ($layout ?? 'app') !== 'public';
+
+        if ($appShell) {
             require ROOT_PATH . '/app/views/layouts/sidebar.php';
             echo '<main class="app-main">';
             require ROOT_PATH . '/app/views/layouts/topbar.php';
+            echo '<div class="app-content">';
         }
 
         require $viewFile;
 
-        if (Auth::check()) {
-            echo '</main>';
+        if ($appShell) {
+            echo '</div></main>';
         }
 
         require ROOT_PATH . '/app/views/layouts/footer.php';

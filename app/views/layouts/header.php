@@ -18,6 +18,9 @@ $info = flash('info');
     <link href="<?= h(asset('vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>" rel="stylesheet">
     <link href="<?= h(asset('vendor/fonts/fonts.css')) ?>" rel="stylesheet">
     <link href="<?= h(versioned_asset('css/style.css')) ?>" rel="stylesheet">
+    <?php if (Auth::check()): ?>
+        <script>try { if (localStorage.getItem('dcf-sidebar') === 'collapsed') document.documentElement.classList.add('sidebar-collapsed'); } catch (e) {}</script>
+    <?php endif; ?>
 </head>
 <body class="<?= h($layout === 'public' ? 'public-body' : (Auth::check() ? 'app-body' : 'auth-body')) ?>">
 <?php if ($success || $error || $info): ?>
@@ -59,16 +62,17 @@ $info = flash('info');
                 <a class="btn btn-light btn-sm" href="<?= h(url('request-quotation')) ?>">
                     <i class="bi bi-truck"></i> Get Quote
                 </a>
-                <a class="btn btn-outline-light btn-sm" href="<?= h(url('login')) ?>">Sign In</a>
+                <?php if (Auth::check()): ?>
+                    <a class="btn btn-outline-light btn-sm" href="<?= h(url('dashboard')) ?>"><i class="bi bi-person-circle"></i> My account</a>
+                <?php else: ?>
+                    <a class="btn btn-outline-light btn-sm" href="<?= h(url('login')) ?>">Sign In</a>
+                <?php endif; ?>
             </div>
         </nav>
         <div class="public-nav-backdrop" data-public-nav-backdrop></div>
     </header>
     <main class="public-main">
 <?php elseif (Auth::check()): ?>
-    <button class="btn btn-dark sidebar-toggle d-lg-none" type="button" data-sidebar-toggle aria-label="Open navigation" aria-controls="appSidebar" aria-expanded="false">
-        <i class="bi bi-list"></i>
-    </button>
     <div class="sidebar-backdrop" data-sidebar-backdrop></div>
     <div class="app-shell">
 <?php else: ?>
