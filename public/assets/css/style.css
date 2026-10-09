@@ -5194,3 +5194,164 @@ body.app-body .tb-menu { display: none; }
         width: auto;
     }
 }
+
+/* =====================================================================
+   Colour scheme: white pages, milky (soft cream) panels.
+   --milk        cards, panels, sidebar, top bar
+   --milk-deep   section bands, table headers, hover rows, image wells
+   --milk-line   borders on milky surfaces
+   Form fields stay pure white so they stand out; green stays for actions.
+   ===================================================================== */
+:root {
+    --milk: #fbf8f2;
+    --milk-deep: #f4eee2;
+    --milk-line: #ebe3d3;
+
+    --app-bg: #ffffff;
+    --app-card-bg: var(--milk);
+    --app-card-border: var(--milk-line);
+    --color-card: var(--milk);
+    --color-card-soft: var(--milk-deep);
+    --color-border: rgba(130, 105, 60, 0.15);
+}
+
+/* White pages */
+body,
+body.public-body,
+body.app-body,
+body.auth-body,
+.auth-page {
+    background: #ffffff;
+}
+
+/* Milky surfaces */
+.panel,
+.stat-card,
+.filter-panel,
+.auth-card,
+.public-contact-card,
+.public-track-card,
+.public-product-card,
+.public-spec-box,
+.public-form-panel,
+.home-category-card,
+.home-service-card,
+.home-cta-form,
+.home-trust-bar,
+.catalog-card,
+.catalog-cta,
+.gallery-card,
+.shipment-timeline-wrap,
+.product-form-section,
+.invoice-total-card,
+.invoice-status-tabs a:not(.active):not(.is-active),
+.notification-item,
+.tracking-result,
+.public-tracking-result > div,
+.stat-card.is-empty {
+    background: var(--milk);
+    border-color: var(--milk-line);
+}
+
+.home-hero,
+.home-cta,
+.public-track-section,
+.public-service-band {
+    background: var(--milk-deep);
+}
+
+/* Image wells and neutral fills */
+.public-detail-media,
+.gallery-media,
+.gallery-media img,
+.cart-thumb,
+.instagram-thumb,
+.status-bar-track,
+.stat-card.is-empty .stat-icon {
+    background: var(--milk-deep);
+}
+
+/* Tables blend into their milky panel */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-hover-bg: var(--milk-deep);
+}
+
+.table thead th {
+    background: var(--milk-deep);
+}
+
+.table tbody tr:hover,
+.spec-table tr:nth-child(odd) {
+    background: var(--milk-deep);
+}
+
+.spec-table th,
+.spec-table td {
+    border-bottom-color: var(--milk-line);
+}
+
+/* Signed-in shell */
+body.app-body .app-sidebar {
+    background: var(--milk);
+    border-right-color: var(--milk-line);
+}
+
+body.app-body .app-topbar {
+    background: rgba(251, 248, 242, 0.95);
+    border-bottom-color: var(--milk-line);
+}
+
+.sb-brand,
+.sb-footer {
+    border-color: var(--milk-line);
+}
+
+.sb-link:hover,
+.sb-sub a:hover,
+.sb-icon-btn:hover,
+.tb-icon-btn:hover {
+    background: var(--milk-deep);
+}
+
+.sb-link.is-active {
+    background: rgba(8, 80, 65, 0.1);
+}
+
+.sb-sub {
+    border-left-color: var(--milk-line);
+}
+
+.sb-collapse,
+.tb-user {
+    background: #ffffff;
+    border-color: var(--milk-line);
+}
+
+.tb-dot {
+    box-shadow: 0 0 0 2px var(--milk);
+}
+
+.tb-menu-list {
+    border-color: var(--milk-line);
+}
+
+/* Form fields stay white for contrast on milky panels */
+.form-control,
+.form-select,
+body.app-body .form-select,
+.spec-row {
+    background-color: #ffffff;
+}
+
+@media (max-width: 640px) {
+    .spec-row {
+        background: #ffffff;
+        border-color: var(--milk-line);
+    }
+}
+
+/* Status-bar cards hold a short list: size to content instead of the chart-card height. */
+.chart-card:has(.status-bars) {
+    min-height: 0;
+}
