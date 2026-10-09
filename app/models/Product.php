@@ -62,6 +62,23 @@ class Product extends Model
         return $sections;
     }
 
+    public const CONDITIONS = ['new' => 'Brand new', 'refurbished' => 'Refurbished', 'used' => 'Used'];
+
+    /**
+     * "Was" price (only kept when above the selling price), condition and warranty, ready for SQL.
+     */
+    private static function pricingDetails(array $data): array
+    {
+        $compareAt = (float) ($data['compare_at_price'] ?? 0);
+        $condition = (string) ($data['item_condition'] ?? 'new');
+
+        return [
+            'compare_at_price' => $compareAt > (float) ($data['price'] ?? 0) ? $compareAt : null,
+            'item_condition' => isset(self::CONDITIONS[$condition]) ? $condition : 'new',
+            'warranty' => mb_substr(trim((string) ($data['warranty'] ?? '')), 0, 80) ?: null,
+        ];
+    }
+
     public function countAll(array $filters = [], bool $activeOnly = false, ?int $locationId = null): int
     {
         [$sql, $params] = $this->listQuery($filters, $activeOnly, $locationId);
@@ -217,8 +234,8 @@ class Product extends Model
 
         try {
             $stmt = $this->db->prepare(
-                'INSERT INTO products (name, category, brand, country_of_origin, description, specifications, price, image, status, created_by)
-                 VALUES (:name, :category, :brand, :country_of_origin, :description, :specifications, :price, :image, :status, :created_by)'
+                'INSERT INTO products (name, category, brand, country_of_origin, description, specifications, price, compare_at_price, item_condition, warranty, image, status, created_by)
+                 VALUES (:name, :category, :brand, :country_of_origin, :description, :specifications, :price, :compare_at_price, :item_condition, :warranty, :image, :status, :created_by)'
             );
 
             $stmt->execute([
@@ -232,7 +249,7 @@ class Product extends Model
                 'image' => $data['image'] ?? null,
                 'status' => $data['status'] ?? 'active',
                 'created_by' => $userId,
-            ]);
+            ] + self::pricingDetails($data));
 
             $productId = (int) $this->db->lastInsertId();
             $sku = ($data['sku'] ?? null) ?: $this->makeSku($data['name'], $productId);
@@ -281,7 +298,8 @@ class Product extends Model
                 'UPDATE products
                  SET name = :name, category = :category, brand = :brand, country_of_origin = :country_of_origin, description = :description,
                      specifications = :specifications,
-                     price = :price, image = :image, status = :status
+                     price = :price, compare_at_price = :compare_at_price, item_condition = :item_condition, warranty = :warranty,
+                     image = :image, status = :status
                  WHERE id = :id'
             );
 
@@ -296,7 +314,7 @@ class Product extends Model
                 'price' => (float) $data['price'],
                 'image' => $data['image'] ?? null,
                 'status' => $data['status'] ?? 'active',
-            ]);
+            ] + self::pricingDetails($data));
 
             $primaryImage = $this->syncGalleryImages($id, $data);
             $this->execute(

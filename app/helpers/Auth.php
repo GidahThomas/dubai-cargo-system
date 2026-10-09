@@ -295,6 +295,82 @@ function company_instagram_url(): string
 }
 
 /**
+ * Specifications are stored one per line as "Label: Value" (older products may have plain lines).
+ *
+ * @return array<int, array{label: string, value: string}> label is '' for a plain line
+ */
+function product_spec_rows(?string $specifications): array
+{
+    $rows = [];
+    foreach (preg_split('/\R/u', (string) $specifications) ?: [] as $line) {
+        $line = trim($line, " \t-•*");
+        if ($line === '') {
+            continue;
+        }
+        if (preg_match('/^([^:]{1,40}):\s*(.+)$/u', $line, $match)) {
+            $rows[] = ['label' => trim($match[1]), 'value' => trim($match[2])];
+        } else {
+            $rows[] = ['label' => '', 'value' => $line];
+        }
+    }
+
+    return $rows;
+}
+
+/**
+ * Builds the stored text from the form's label/value rows, skipping empty rows.
+ */
+function product_specs_from_rows(array $labels, array $values): string
+{
+    $lines = [];
+    foreach ($values as $index => $value) {
+        $value = trim(preg_replace('/\s+/u', ' ', (string) $value));
+        $label = trim(str_replace(':', '', (string) ($labels[$index] ?? '')));
+        if ($value !== '') {
+            $lines[] = $label !== '' ? $label . ': ' . $value : $value;
+        }
+    }
+
+    return implode("\n", $lines);
+}
+
+/**
+ * Short line for product cards, e.g. "Intel Core i7 · 16GB · 512GB SSD".
+ */
+function product_key_specs(?string $specifications, int $limit = 3): string
+{
+    $preferred = ['processor', 'cpu', 'ram', 'memory', 'storage', 'ssd', 'screen size', 'display', 'resolution', 'print type', 'graphics'];
+    $rows = product_spec_rows($specifications);
+    $picked = [];
+
+    foreach ($preferred as $wanted) {
+        foreach ($rows as $index => $row) {
+            if (!isset($picked[$index]) && strcasecmp($row['label'], $wanted) === 0) {
+                $picked[$index] = $row['value'];
+            }
+        }
+    }
+    foreach ($rows as $index => $row) {
+        $picked[$index] ??= $row['value'];
+    }
+
+    $values = array_map(static fn (string $value): string => mb_strimwidth($value, 0, 28, '…'), array_slice(array_values($picked), 0, $limit));
+
+    return implode(' · ', $values);
+}
+
+/**
+ * Whole-percent saving when a "was" price is set above the selling price, else 0.
+ */
+function discount_percent(mixed $price, mixed $compareAt): int
+{
+    $price = (float) $price;
+    $compareAt = (float) $compareAt;
+
+    return $compareAt > $price && $compareAt > 0 ? (int) round(($compareAt - $price) / $compareAt * 100) : 0;
+}
+
+/**
  * Whether the public Gallery has anything to show (its menu links are hidden until it does).
  */
 function gallery_has_posts(): bool

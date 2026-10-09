@@ -100,7 +100,10 @@ $heroCategories = array_slice($categories, 0, 4);
                 <span class="catalog-card-body">
                     <small><?= h($product['category']) ?> &middot; <?= h($product['brand']) ?></small>
                     <strong class="catalog-card-name" title="<?= h($product['name']) ?>"><?= h($product['name']) ?></strong>
-                    <span class="catalog-card-price"><?= h(money($product['price'])) ?></span>
+                    <?php if ($keySpecs = product_key_specs($product['specifications'] ?? '')): ?>
+                        <span class="catalog-card-specs"><?= h($keySpecs) ?></span>
+                    <?php endif; ?>
+                    <?php require ROOT_PATH . '/app/views/partials/card-price.php'; ?>
                 </span>
             </a>
         <?php endforeach; ?>

@@ -42,7 +42,20 @@ foreach ($galleryImages as $image) {
     <div class="public-detail-content">
         <span class="public-kicker"><?= h($product['brand']) ?> / <?= h($product['category']) ?></span>
         <h1><?= h($product['name']) ?></h1>
-        <div class="public-detail-price"><?= h(money($product['price'])) ?></div>
+        <?php $saving = discount_percent($product['price'], $product['compare_at_price'] ?? 0); ?>
+        <div class="public-detail-price">
+            <?= h(money($product['price'])) ?>
+            <?php if ($saving > 0): ?>
+                <del class="price-was"><?= h(money($product['compare_at_price'])) ?></del>
+                <span class="price-saving">Save <?= $saving ?>%</span>
+            <?php endif; ?>
+        </div>
+        <div class="product-facts">
+            <span><i class="bi bi-patch-check"></i> <?= h(Product::CONDITIONS[$product['item_condition'] ?? 'new'] ?? 'Brand new') ?></span>
+            <?php if (!empty($product['warranty'])): ?>
+                <span><i class="bi bi-shield-check"></i> <?= h(stripos($product['warranty'], 'warranty') !== false ? $product['warranty'] : $product['warranty'] . ' warranty') ?></span>
+            <?php endif; ?>
+        </div>
         <div class="public-detail-stock">
             <span class="badge <?= ((int) ($product['quantity'] ?? 0) > 0) ? 'text-bg-success' : 'text-bg-warning' ?>">
                 <?= (int) ($product['quantity'] ?? 0) ?> available
@@ -59,10 +72,24 @@ foreach ($galleryImages as $image) {
             <p><?= nl2br(h($product['description'])) ?></p>
         <?php endif; ?>
 
-        <?php if (!empty($product['specifications'])): ?>
+        <?php $specRows = product_spec_rows($product['specifications'] ?? ''); ?>
+        <?php if ($specRows): ?>
             <section class="public-spec-box">
                 <h2>Specifications</h2>
-                <p><?= nl2br(h($product['specifications'])) ?></p>
+                <table class="spec-table">
+                    <tbody>
+                        <?php foreach ($specRows as $row): ?>
+                            <tr>
+                                <?php if ($row['label'] !== ''): ?>
+                                    <th scope="row"><?= h($row['label']) ?></th>
+                                    <td><?= h($row['value']) ?></td>
+                                <?php else: ?>
+                                    <td colspan="2"><?= h($row['value']) ?></td>
+                                <?php endif; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </section>
         <?php endif; ?>
 

@@ -31,10 +31,6 @@
                 <datalist id="originCountries"><option value="United Arab Emirates"><option value="China"><option value="United States"><option value="Japan"><option value="South Korea"><option value="Taiwan"><option value="India"><option value="United Kingdom"><option value="Germany"></datalist>
             </div>
             <div class="col-md-3">
-                <label class="form-label" for="price">Price (TZS)</label>
-                <input type="number" step="1" min="0" class="form-control" id="price" name="price" placeholder="0" required>
-            </div>
-            <div class="col-md-3">
                 <label class="form-label" for="sku">SKU</label>
                 <input class="form-control" id="sku" name="sku" placeholder="Auto generated if left blank">
             </div>
@@ -77,11 +73,8 @@
                 <label class="form-label" for="description">Description</label>
                 <textarea class="form-control" id="description" name="description" rows="4" placeholder="Short customer-facing summary of this product"></textarea>
             </div>
-            <div class="col-12">
-                <label class="form-label" for="specifications">Specifications</label>
-                <textarea class="form-control" id="specifications" name="specifications" rows="4" placeholder="Processor, RAM, storage, operating system, accessories, warranty"></textarea>
-            </div>
         </div>
+        <?php $product = []; require __DIR__ . '/_pricing_specs.php'; ?>
         <div class="form-actions">
             <button class="btn btn-primary" type="submit">
                 <i class="bi bi-cloud-upload me-2"></i>Save Uploaded Product

@@ -950,3 +950,88 @@ document.querySelectorAll('[data-barcode-scan]').forEach((wrapper) => {
         });
     }
 });
+
+/*
+ * Product form: specifications table (add/remove rows, category templates) and the
+ * "Save X%" preview for the price-before-discount field.
+ */
+document.querySelectorAll('[data-spec-editor]').forEach((editor) => {
+    const rowsBox = editor.querySelector('[data-spec-rows]');
+    const form = editor.closest('form');
+    const presets = {
+        laptop: ['Processor', 'RAM', 'Storage', 'Display', 'Graphics', 'Operating system', 'Battery', 'Weight', 'Ports', 'Keyboard'],
+        desktop: ['Processor', 'RAM', 'Storage', 'Graphics', 'Operating system', 'Ports', 'Form factor', 'In the box'],
+        monitor: ['Screen size', 'Resolution', 'Panel type', 'Refresh rate', 'Response time', 'Ports', 'Stand'],
+        printer: ['Print type', 'Functions', 'Print speed', 'Print resolution', 'Connectivity', 'Paper size', 'Cartridge'],
+        accessory: ['Type', 'Connectivity', 'Compatibility', 'Colour', 'In the box'],
+    };
+
+    const makeRow = (label = '', value = '') => {
+        const template = rowsBox.querySelector('[data-spec-row]');
+        const row = template.cloneNode(true);
+        const [labelInput, valueInput] = row.querySelectorAll('input');
+        labelInput.value = label;
+        valueInput.value = value;
+        return row;
+    };
+
+    editor.querySelector('[data-spec-add]')?.addEventListener('click', () => {
+        const row = makeRow();
+        rowsBox.appendChild(row);
+        row.querySelector('input').focus();
+    });
+
+    rowsBox.addEventListener('click', (event) => {
+        const remove = event.target.closest('[data-spec-remove]');
+        if (!remove) {
+            return;
+        }
+        const rows = rowsBox.querySelectorAll('[data-spec-row]');
+        const row = remove.closest('[data-spec-row]');
+        if (rows.length > 1) {
+            row.remove();
+        } else {
+            row.querySelectorAll('input').forEach((input) => { input.value = ''; });
+        }
+    });
+
+    form?.querySelectorAll('[data-spec-preset]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const labels = presets[button.dataset.specPreset] || [];
+            // Keep whatever details were already typed, matched by feature name.
+            const existing = Array.from(rowsBox.querySelectorAll('[data-spec-row]')).map((row) => {
+                const [labelInput, valueInput] = row.querySelectorAll('input');
+                return { label: labelInput.value.trim(), value: valueInput.value.trim() };
+            }).filter((row) => row.label || row.value);
+            const byLabel = new Map(existing.filter((row) => row.label).map((row) => [row.label.toLowerCase(), row.value]));
+            const template = rowsBox.querySelector('[data-spec-row]');
+
+            const rows = labels.map((label) => makeRow(label, byLabel.get(label.toLowerCase()) || ''));
+            existing
+                .filter((row) => !labels.some((label) => label.toLowerCase() === row.label.toLowerCase()))
+                .forEach((row) => rows.push(makeRow(row.label, row.value)));
+
+            rowsBox.replaceChildren(...rows.length ? rows : [template]);
+            rowsBox.querySelector('[data-spec-row] input:nth-of-type(2)')?.focus();
+        });
+    });
+});
+
+document.querySelectorAll('[data-compare-input]').forEach((compareInput) => {
+    const form = compareInput.closest('form');
+    const priceInput = form?.querySelector('[data-price-input]');
+    const preview = form?.querySelector('[data-discount-preview]');
+    if (!priceInput || !preview) {
+        return;
+    }
+    const update = () => {
+        const price = parseFloat(priceInput.value) || 0;
+        const was = parseFloat(compareInput.value) || 0;
+        preview.textContent = was > price && was > 0
+            ? 'Customers see: Save ' + Math.round((was - price) / was * 100) + '%'
+            : 'Shown crossed out when higher than the selling price.';
+        preview.classList.toggle('text-success', was > price && was > 0);
+    };
+    priceInput.addEventListener('input', update);
+    compareInput.addEventListener('input', update);
+});

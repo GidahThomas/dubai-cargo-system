@@ -260,8 +260,13 @@ class ProductController extends Controller
             'brand' => $this->cleanString($this->post('brand')),
             'country_of_origin' => mb_substr($this->cleanString($this->post('country_of_origin')), 0, 80),
             'description' => $this->cleanString($this->post('description')),
-            'specifications' => $this->cleanString($this->post('specifications')),
+            'specifications' => isset($_POST['spec_value']) && is_array($_POST['spec_value'])
+                ? product_specs_from_rows((array) ($_POST['spec_label'] ?? []), $_POST['spec_value'])
+                : $this->cleanString($this->post('specifications')),
             'price' => (float) $this->post('price', 0),
+            'compare_at_price' => (float) $this->post('compare_at_price', 0),
+            'item_condition' => $this->cleanString($this->post('item_condition')),
+            'warranty' => $this->cleanString($this->post('warranty')),
             'image' => $primaryImage,
             'gallery_images' => $galleryImages,
             'existing_gallery' => $this->existingGalleryPayload($existing['gallery_images'] ?? []),
