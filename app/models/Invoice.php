@@ -308,6 +308,7 @@ class Invoice extends Model
         $existing = $this->findByOrder($orderId);
 
         if ($existing) {
+            $this->linkOrderPayments((int) $existing['invoice_id'], $orderId);
             return (int) $existing['invoice_id'];
         }
 
@@ -348,7 +349,7 @@ class Invoice extends Model
             ];
         }
 
-        return $this->create([
+        $invoiceId = $this->create([
             'customer_mode' => 'snapshot',
             'customer_id' => $order['customer_id'] ?? null,
             'customer_name' => $order['customer_name'],
@@ -382,6 +383,23 @@ class Invoice extends Model
             'delivery_instructions' => $order['notes'] ?? '',
             'items' => $items,
         ], $createdBy);
+
+        $this->linkOrderPayments($invoiceId, $orderId);
+
+        return $invoiceId;
+    }
+
+    /**
+     * The order's payments belong to its invoice too, so money already confirmed on the order
+     * shows as paid on the invoice, and later confirmations keep the invoice in sync.
+     */
+    private function linkOrderPayments(int $invoiceId, int $orderId): void
+    {
+        $this->execute(
+            'UPDATE payments SET invoice_id = :invoice_id WHERE order_id = :order_id AND invoice_id IS NULL',
+            ['invoice_id' => $invoiceId, 'order_id' => $orderId]
+        );
+        $this->syncPaymentStatus($invoiceId);
     }
 
     public function recordPayment(int $invoiceId, float $amount, string $method, string $reference, int $confirmedBy): bool

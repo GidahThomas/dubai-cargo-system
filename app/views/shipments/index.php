@@ -90,8 +90,9 @@
                 <input class="form-control" id="destination" name="destination" placeholder="Use order address if blank">
             </div>
             <div class="col-md-3">
-                <label class="form-label" for="status_new">Status</label>
+                <label class="form-label" for="status_new">Starting stage</label>
                 <select class="form-select" id="status_new" name="status">
+                    <option value="" selected>Automatic (Payment Confirmed if already paid)</option>
                     <?php foreach ($statuses as $status): ?>
                         <option value="<?= h($status) ?>"><?= h(readable_status($status)) ?></option>
                     <?php endforeach; ?>
