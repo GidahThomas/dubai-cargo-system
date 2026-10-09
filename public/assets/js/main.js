@@ -1108,3 +1108,36 @@ document.querySelectorAll('[data-compare-input]').forEach((compareInput) => {
     sidebar.querySelector('.sb-nav')?.addEventListener('scroll', hide, { passive: true });
     window.addEventListener('resize', hide);
 })();
+
+/*
+ * Bootstrap tooltips and popovers are opt-in, so switch them on for the whole system:
+ * - anything marked data-bs-toggle="tooltip" / "popover"
+ * - icon-only buttons and links that carry a title (e.g. view / PDF / email / cancel actions),
+ *   which otherwise only get the browser's slow plain tooltip
+ */
+(() => {
+    if (!window.bootstrap) {
+        return;
+    }
+    const isIconOnly = (el) => el.textContent.trim() === '' && el.querySelector('i.bi');
+
+    document.querySelectorAll('[data-bs-toggle="tooltip"], .btn[title], a.btn-icon[title], button.btn-icon[title]').forEach((el) => {
+        if (el.matches('[data-bs-toggle="dropdown"], [data-bs-toggle="collapse"]') && !isIconOnly(el)) {
+            return;
+        }
+        if (!el.matches('[data-bs-toggle="tooltip"]') && !isIconOnly(el)) {
+            return; // buttons with visible text don't need a tooltip
+        }
+        if (!el.getAttribute('aria-label') && el.getAttribute('title')) {
+            el.setAttribute('aria-label', el.getAttribute('title'));
+        }
+        bootstrap.Tooltip.getOrCreateInstance(el, { container: 'body', trigger: 'hover focus' });
+    });
+
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => {
+        bootstrap.Popover.getOrCreateInstance(el, { container: 'body' });
+    });
+
+    // Hide any open tooltip when its button opens a menu or panel, so it does not linger.
+    document.addEventListener('show.bs.dropdown', () => document.querySelectorAll('.tooltip').forEach((t) => t.remove()));
+})();

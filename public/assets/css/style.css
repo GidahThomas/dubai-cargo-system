@@ -5355,3 +5355,20 @@ body.app-body .form-select,
 .chart-card:has(.status-bars) {
     min-height: 0;
 }
+
+/* Outline buttons in the signed-in area rest on white, but must still take Bootstrap's hover
+   colour (an older "background: #fff" rule left white icons on a white button). */
+body.app-body .btn-outline-primary:hover,
+body.app-body .btn-outline-primary:focus-visible,
+body.app-body .btn-outline-primary:active,
+body.app-body .btn-outline-secondary:hover,
+body.app-body .btn-outline-secondary:focus-visible,
+body.app-body .btn-outline-secondary:active,
+body.app-body .btn-outline-danger:hover,
+body.app-body .btn-outline-danger:focus-visible,
+body.app-body .btn-outline-danger:active,
+body.app-body .btn-outline-success:hover,
+body.app-body .btn-outline-success:focus-visible,
+body.app-body .btn-outline-success:active {
+    background: var(--bs-btn-hover-bg);
+}
