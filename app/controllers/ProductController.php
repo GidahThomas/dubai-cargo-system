@@ -299,21 +299,7 @@ class ProductController extends Controller
             return $existingImage;
         }
 
-        $uploadDir = ROOT_PATH . '/public/uploads';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0775, true);
-        }
-
-        $fileName = 'product-' . time() . '-' . random_int(1000, 9999) . '.' . $extension;
-        $target = $uploadDir . '/' . $fileName;
-
-        if (move_uploaded_file($_FILES['image_file']['tmp_name'], $target)) {
-            Thumbnail::make('uploads/' . $fileName);
-            return 'uploads/' . $fileName;
-        }
-
-        return $existingImage;
+        return MediaStorage::storeUpload($_FILES['image_file']['tmp_name'], 'product', $extension) ?? $existingImage;
     }
 
     private function handleGalleryUploads(): array
@@ -323,11 +309,6 @@ class ProductController extends Controller
         }
 
         $images = [];
-        $uploadDir = ROOT_PATH . '/public/uploads';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0775, true);
-        }
 
         foreach ($_FILES['gallery_files']['name'] as $index => $name) {
             if (($_FILES['gallery_files']['error'][$index] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -340,12 +321,9 @@ class ProductController extends Controller
                 continue;
             }
 
-            $fileName = 'product-gallery-' . time() . '-' . random_int(1000, 9999) . '-' . (int) $index . '.' . $extension;
-            $target = $uploadDir . '/' . $fileName;
-
-            if (move_uploaded_file($_FILES['gallery_files']['tmp_name'][$index], $target)) {
-                Thumbnail::make('uploads/' . $fileName);
-                $images[] = 'uploads/' . $fileName;
+            $stored = MediaStorage::storeUpload($_FILES['gallery_files']['tmp_name'][$index], 'product-gallery-' . (int) $index, $extension);
+            if ($stored !== null) {
+                $images[] = $stored;
             }
         }
 
@@ -415,21 +393,6 @@ class ProductController extends Controller
             return null;
         }
 
-        $uploadDir = ROOT_PATH . '/public/uploads';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0775, true);
-        }
-
-        $safePrefix = preg_replace('/[^a-z0-9-]+/i', '-', $prefix) ?: 'product-image';
-        $fileName = strtolower($safePrefix) . '-' . time() . '-' . random_int(1000, 9999) . '.' . $extension;
-        $target = $uploadDir . '/' . $fileName;
-
-        if (move_uploaded_file((string) ($file['tmp_name'] ?? ''), $target)) {
-            Thumbnail::make('uploads/' . $fileName);
-            return 'uploads/' . $fileName;
-        }
-
-        return null;
+        return MediaStorage::storeUpload((string) ($file['tmp_name'] ?? ''), $prefix, $extension);
     }
 }

@@ -2,6 +2,17 @@
 
 function load_env(string $path): void
 {
+    // Keys this function copied from a .env file into the process environment (not real host settings).
+    static $fromDotEnv = [];
+
+    // Hosting dashboards (Vercel, Render, ...) provide settings as real environment variables,
+    // which PHP does not always copy into $_ENV. Those win over a .env file.
+    foreach ((array) getenv() as $key => $value) {
+        if (is_string($key) && !isset($fromDotEnv[$key]) && !array_key_exists($key, $_ENV)) {
+            $_ENV[$key] = $value;
+        }
+    }
+
     if (!is_file($path) || !is_readable($path)) {
         return;
     }
@@ -41,6 +52,7 @@ function load_env(string $path): void
         if (!array_key_exists($key, $_ENV)) {
             $_ENV[$key] = $value;
             putenv($key . '=' . $value);
+            $fromDotEnv[$key] = true;
         }
     }
 }

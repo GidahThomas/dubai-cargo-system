@@ -48,8 +48,16 @@ The root `.htaccess` only lets the web reach `public/`. On a real server, point 
 | `AZAMPAY_*` | Mobile-money payments (M-Pesa, Tigo Pesa, Airtel Money, HaloPesa) |
 | `BACKUP_DIR`, `BACKUP_KEEP`, `BACKUP_COPY_DIR`, `MYSQL_BIN_DIR` | Backups and their off-machine copy |
 | `DB_TEST_NAME` | Database the tests rebuild (default `<DB_NAME>_test`) |
+| `DB_PORT`, `DB_SSL_CA` | Cloud databases (TiDB Cloud: port 4000, encrypted connection) |
+| `CLOUDINARY_URL`, `CLOUDINARY_FOLDER` | Store uploaded photos on Cloudinary instead of `public/uploads` |
+| `SESSION_DRIVER=database` | Keep sign-in sessions in the database (hosts without a permanent disk) |
+| `APP_BASE_PATH` | Public path of the site when every request runs through one script (`/` on Vercel) |
+| `CRON_SECRET` | Enables the scheduled-jobs web address `index.php?url=cron/messages` / `cron/daily` |
+| `LOG_DIR` | Where error logs are written (default `storage/logs`) |
 
 Every external service is optional and switched off until its keys are set.
+
+Hosting: [docs/DEPLOY_CPANEL.md](docs/DEPLOY_CPANEL.md) (shared PHP hosting) or [docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) (Vercel free + TiDB Cloud + Cloudinary).
 
 ---
 
@@ -72,9 +80,12 @@ C:\xampp\php\php.exe tools\set_password.php <email> [pw] reset a password (gener
 C:\xampp\php\php.exe tools\send_messages.php             send queued messages now
 C:\xampp\php\php.exe -d extension=gd tools\make_thumbnails.php
 C:\xampp\php\php.exe tools\import_instagram.php [folder] import an Instagram data export
+C:\xampp\php\php.exe tools\import_sql.php <file.sql>     load a database dump (e.g. into TiDB Cloud)
+C:\xampp\php\php.exe tools\upload_images_to_cloudinary.php [--dry-run]
+powershell -ExecutionPolicy Bypass -File tools\export_database.ps1   dump for a cloud database
 ```
 
-These scripts refuse to run from a browser.
+Add `--env=.env.tidb` to any PHP tool to run it against other settings (e.g. the cloud database). These scripts refuse to run from a browser.
 
 ---
 

@@ -36,6 +36,12 @@ final class Auth
             'samesite' => 'Lax',
         ]);
 
+        if (strtolower((string) ($_ENV['SESSION_DRIVER'] ?? 'files')) === 'database') {
+            session_set_save_handler(new DatabaseSessionHandler(Database::connect()), true);
+            ini_set('session.gc_probability', '1');
+            ini_set('session.gc_divisor', '100');
+        }
+
         session_start();
 
         if (!isset($_SESSION['created_at'])) {
@@ -178,6 +184,12 @@ function h(mixed $value): string
 
 function base_url(): string
 {
+    // Hosts that route every request through one function (e.g. Vercel's /api/index.php)
+    // set APP_BASE_PATH to the public path of the site ("/" for the domain root).
+    if (isset($_ENV['APP_BASE_PATH']) && $_ENV['APP_BASE_PATH'] !== '') {
+        return rtrim((string) $_ENV['APP_BASE_PATH'], '/');
+    }
+
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
     $scriptDir = rtrim($scriptDir, '/');
 

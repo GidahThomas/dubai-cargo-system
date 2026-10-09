@@ -19,6 +19,10 @@ final class Thumbnail
     public static function url(?string $path): string
     {
         $path = (string) $path;
+        if (MediaStorage::isCloudinaryUrl($path)) {
+            // Cloudinary resizes on request: same 480px limit, best format for the browser.
+            return MediaStorage::cloudinaryVariant($path, 'c_limit,w_' . self::MAX_SIZE . ',f_auto,q_auto');
+        }
         if ($path === '' || preg_match('#^https?://#i', $path)) {
             return public_url($path);
         }

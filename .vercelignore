@@ -1,0 +1,13 @@
+# Not needed on Vercel (keeps the upload small and customer data off the build)
+deploy/
+storage/backups/
+storage/instagram-export/
+storage/logs/
+app/config/oracleJdk-27/
+tests/
+node_modules/
+.env
+.runtime/
+.agents/
+.codex/
+*.zip

@@ -16,6 +16,20 @@ if (file_exists(ROOT_PATH . '/vendor/autoload.php')) {
 }
 
 require_once ROOT_PATH . '/app/helpers/Env.php';
+
+// --env=.env.tidb runs the tool against another set of settings (e.g. the cloud database);
+// anything that file leaves out still comes from .env.
+foreach ($argv ?? [] as $argument) {
+    if (str_starts_with($argument, '--env=')) {
+        $envFile = substr($argument, 6);
+        $envPath = is_file($envFile) ? $envFile : ROOT_PATH . '/' . $envFile;
+        if (!is_file($envPath)) {
+            fwrite(STDERR, "Settings file not found: {$envFile}\n");
+            exit(1);
+        }
+        load_env($envPath);
+    }
+}
 load_env(ROOT_PATH . '/.env');
 
 if (!defined('APP_DEBUG')) {

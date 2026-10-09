@@ -10,14 +10,31 @@ final class ErrorReporter
     public const LOG_DIR = ROOT_PATH . '/storage/logs';
     private const ALERT_INTERVAL_SECONDS = 1800;
 
-    public static function register(): void
+    /**
+     * Folder for log files: LOG_DIR from .env, else storage/logs. Null when nothing is writable
+     * (e.g. Vercel), in which case errors go to the host's own log stream instead.
+     */
+    public static function logDir(): ?string
     {
-        if (!is_dir(self::LOG_DIR)) {
-            @mkdir(self::LOG_DIR, 0775, true);
+        static $dir = false;
+
+        if ($dir === false) {
+            $dir = rtrim((string) ($_ENV['LOG_DIR'] ?? ''), '/\\') ?: self::LOG_DIR;
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            $dir = is_dir($dir) && is_writable($dir) ? $dir : null;
         }
 
+        return $dir;
+    }
+
+    public static function register(): void
+    {
         ini_set('log_errors', '1');
-        ini_set('error_log', self::LOG_DIR . '/php-errors.log');
+        if (self::logDir() !== null) {
+            ini_set('error_log', self::logDir() . '/php-errors.log');
+        }
         ini_set('display_errors', APP_DEBUG ? '1' : '0');
 
         set_exception_handler(static function (Throwable $exception): void {
@@ -51,7 +68,11 @@ final class ErrorReporter
                 $user,
                 $exception->getTraceAsString()
             );
-            @file_put_contents(self::LOG_DIR . '/app-errors.log', $entry, FILE_APPEND | LOCK_EX);
+            if (self::logDir() !== null) {
+                @file_put_contents(self::logDir() . '/app-errors.log', $entry, FILE_APPEND | LOCK_EX);
+            } else {
+                error_log(rtrim($entry));
+            }
 
             self::alert($exception, $where, $request, $user);
         } catch (Throwable) {
@@ -66,7 +87,7 @@ final class ErrorReporter
             return;
         }
 
-        $stateFile = self::LOG_DIR . '/alert-state.json';
+        $stateFile = (self::logDir() ?? sys_get_temp_dir()) . '/alert-state.json';
         $state = is_file($stateFile) ? (json_decode((string) file_get_contents($stateFile), true) ?: []) : [];
         $signature = sha1($exception::class . $where . $exception->getMessage());
         $now = time();

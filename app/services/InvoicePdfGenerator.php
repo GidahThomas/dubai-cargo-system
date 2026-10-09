@@ -496,6 +496,10 @@ class InvoicePdfGenerator
     {
         $path = trim($path);
 
+        if (MediaStorage::isCloudinaryUrl($path)) {
+            return $this->downloadCloudinaryImage($path);
+        }
+
         if ($path === '' || preg_match('/^https?:\/\//i', $path)) {
             return null;
         }
@@ -511,6 +515,32 @@ class InvoicePdfGenerator
         }
 
         return $real;
+    }
+
+    /**
+     * Fetches a Cloudinary image as a JPEG (the only formats the PDF writer embeds are JPEG/PNG)
+     * into the temp folder, reusing it for later PDFs. Only res.cloudinary.com is ever fetched.
+     */
+    private function downloadCloudinaryImage(string $url): ?string
+    {
+        $jpegUrl = MediaStorage::cloudinaryVariant($url, 'f_jpg,q_85,c_limit,w_800');
+        $cacheFile = sys_get_temp_dir() . '/dcf-pdf-' . sha1($jpegUrl) . '.jpg';
+
+        if (is_file($cacheFile) && filesize($cacheFile) > 0) {
+            return $cacheFile;
+        }
+
+        $curl = curl_init($jpegUrl);
+        curl_setopt_array($curl, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 10, CURLOPT_FOLLOWLOCATION => false]);
+        $bytes = curl_exec($curl);
+        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        curl_close($curl);
+
+        if ($status !== 200 || !is_string($bytes) || !str_starts_with($bytes, "\xFF\xD8")) {
+            return null;
+        }
+
+        return @file_put_contents($cacheFile, $bytes) !== false ? $cacheFile : null;
     }
 
     private function loadImage(string $path): ?array

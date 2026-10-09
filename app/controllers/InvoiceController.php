@@ -346,20 +346,7 @@ class InvoiceController extends Controller
             return $existingLogo;
         }
 
-        $uploadDir = ROOT_PATH . '/public/uploads';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0775, true);
-        }
-
-        $fileName = 'invoice-logo-' . time() . '-' . random_int(1000, 9999) . '.' . $extension;
-        $target = $uploadDir . '/' . $fileName;
-
-        if (move_uploaded_file($_FILES['logo_file']['tmp_name'], $target)) {
-            return 'uploads/' . $fileName;
-        }
-
-        return $existingLogo;
+        return MediaStorage::storeUpload($_FILES['logo_file']['tmp_name'], 'invoice-logo', $extension) ?? $existingLogo;
     }
 
     private function sendInvoiceEmail(string $to, array $invoice, array $settings, string $pdf): bool
