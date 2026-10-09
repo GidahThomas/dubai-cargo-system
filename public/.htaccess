@@ -1,5 +1,14 @@
 Options -Indexes
 
+# Installable app files
+AddType application/manifest+json .webmanifest
+<Files "sw.js">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-cache"
+        Header set Service-Worker-Allowed "./"
+    </IfModule>
+</Files>
+
 # Security headers for every response.
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"

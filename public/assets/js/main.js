@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const sidebar = document.getElementById('appSidebar');
-    const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
+    const sidebarToggles = document.querySelectorAll('[data-sidebar-toggle]');
+    const sidebarToggle = sidebarToggles[0] || null;
     const sidebarBackdrop = document.querySelector('[data-sidebar-backdrop]');
 
     // Phones and tablets: the sidebar is a drawer that slides over the page.
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sidebar.classList.toggle('is-open', open);
         sidebarBackdrop?.classList.toggle('is-open', open);
         document.body.classList.toggle('sidebar-drawer-open', open);
-        sidebarToggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        sidebarToggles.forEach((toggle) => toggle.setAttribute('aria-expanded', open ? 'true' : 'false'));
         if (open) {
             sidebar.querySelector('[data-sidebar-close]')?.focus();
         } else if (document.activeElement && sidebar.contains(document.activeElement)) {
@@ -43,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const closeSidebar = () => setSidebarOpen(false);
 
-    sidebarToggle?.addEventListener('click', () => setSidebarOpen(!sidebar?.classList.contains('is-open')));
+    sidebarToggles.forEach((toggle) => toggle.addEventListener('click', () => setSidebarOpen(!sidebar?.classList.contains('is-open'))));
     sidebar?.querySelector('[data-sidebar-close]')?.addEventListener('click', closeSidebar);
     sidebarBackdrop?.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', (event) => {
@@ -1140,4 +1141,53 @@ document.querySelectorAll('[data-compare-input]').forEach((compareInput) => {
 
     // Hide any open tooltip when its button opens a menu or panel, so it does not linger.
     document.addEventListener('show.bs.dropdown', () => document.querySelectorAll('.tooltip').forEach((t) => t.remove()));
+})();
+
+/*
+ * Installable app: register the service worker, and offer "Install app" where the browser
+ * supports it (Android / desktop Chrome and Edge). iPhones get an "Add to Home Screen" tip.
+ * Service workers need HTTPS (or localhost), so on plain-HTTP addresses this quietly does nothing.
+ */
+(() => {
+    const manifest = document.querySelector('link[rel="manifest"]');
+    if (!manifest) {
+        return;
+    }
+    const base = new URL('.', manifest.href).pathname;
+
+    if ('serviceWorker' in navigator && window.isSecureContext) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register(base + 'sw.js', { scope: base }).catch(() => {});
+        });
+    }
+
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    document.documentElement.classList.toggle('is-standalone-app', standalone);
+    if (standalone) {
+        return; // already installed
+    }
+
+    let deferredPrompt = null;
+    const installButtons = document.querySelectorAll('[data-install-app]');
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+        installButtons.forEach((button) => { button.hidden = false; });
+    });
+    installButtons.forEach((button) => button.addEventListener('click', async (event) => {
+        event.preventDefault();
+        if (!deferredPrompt) {
+            return;
+        }
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice.catch(() => null);
+        deferredPrompt = null;
+        installButtons.forEach((b) => { b.hidden = true; });
+    }));
+    window.addEventListener('appinstalled', () => installButtons.forEach((b) => { b.hidden = true; }));
+
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    if (isIos) {
+        document.querySelectorAll('[data-ios-install-tip]').forEach((tip) => { tip.hidden = false; });
+    }
 })();

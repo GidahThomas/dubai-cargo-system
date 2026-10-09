@@ -5372,3 +5372,172 @@ body.app-body .btn-outline-success:focus-visible,
 body.app-body .btn-outline-success:active {
     background: var(--bs-btn-hover-bg);
 }
+
+/* =====================================================================
+   Mobile app feel: bottom tab bar, safe areas, touch behaviour
+   ===================================================================== */
+html {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav {
+    display: none;
+}
+
+.site-footer-install {
+    align-self: flex-start;
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    background: transparent;
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.site-footer-install:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.site-footer-ios-tip {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 767.98px) {
+    .bottom-nav {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1045;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.97);
+        border-top: 1px solid var(--milk-line, #ebe3d3);
+        box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06);
+        backdrop-filter: saturate(1.4) blur(10px);
+    }
+
+    .bottom-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-height: 50px;
+        padding: 4px 2px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: #64748b;
+        font-size: 0.68rem;
+        font-weight: 600;
+        line-height: 1.1;
+        text-decoration: none;
+        user-select: none;
+    }
+
+    .bottom-nav-item i {
+        font-size: 1.3rem;
+        line-height: 1;
+    }
+
+    .bottom-nav-item.is-active {
+        color: var(--color-primary);
+    }
+
+    .bottom-nav-item.is-active .bottom-nav-icon::after {
+        content: "";
+        position: absolute;
+        top: -7px;
+        left: 50%;
+        width: 20px;
+        height: 3px;
+        border-radius: 0 0 3px 3px;
+        background: var(--color-primary);
+        transform: translateX(-50%);
+    }
+
+    .bottom-nav-item:active {
+        background: var(--milk-deep, #f4eee2);
+    }
+
+    .bottom-nav-icon {
+        position: relative;
+        display: inline-flex;
+    }
+
+    .bottom-nav-badge {
+        position: absolute;
+        top: -5px;
+        right: -10px;
+        min-width: 17px;
+        height: 17px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: #dc2626;
+        box-shadow: 0 0 0 2px #fff;
+        color: #fff;
+        font-size: 0.6rem;
+        font-weight: 700;
+        line-height: 17px;
+        text-align: center;
+    }
+
+    /* Room for the tab bar so it never covers content or the footer. */
+    body:has(.bottom-nav) {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
+    }
+
+    body:has(.bottom-nav) .whatsapp-float {
+        bottom: calc(76px + env(safe-area-inset-bottom));
+    }
+
+    /* The tab bar's Menu replaces the top bar's on phones. */
+    body.app-body .tb-menu {
+        display: none;
+    }
+
+    body.app-body .app-topbar {
+        padding-left: 16px;
+    }
+
+    /* 16px fields stop iPhones zooming in when a field is tapped. */
+    input.form-control,
+    select.form-select,
+    textarea.form-control {
+        font-size: 16px;
+    }
+
+    /* Comfortable touch targets. */
+    .btn {
+        min-height: 40px;
+    }
+
+    .btn-sm {
+        min-height: 34px;
+    }
+}
+
+/* Installed app (standalone): respect the status bar / notch. */
+html.is-standalone-app body.app-body .app-topbar,
+html.is-standalone-app .public-header {
+    padding-top: env(safe-area-inset-top);
+}
+
+html.is-standalone-app body.app-body .app-topbar {
+    height: calc(var(--tb-h) + env(safe-area-inset-top));
+}
+
+@media (display-mode: standalone) {
+    body {
+        overscroll-behavior-y: none;
+    }
+}
+
+@media print {
+    .bottom-nav { display: none !important; }
+}

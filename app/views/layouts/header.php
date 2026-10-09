@@ -9,7 +9,16 @@ $info = flash('info');
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#085041">
+    <meta name="application-name" content="<?= h(company_name()) ?>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="<?= h(company_name()) ?>">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="<?= h(public_url('manifest.webmanifest')) ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= h(asset('icons/favicon-32.png')) ?>">
+    <link rel="apple-touch-icon" href="<?= h(asset('icons/apple-touch-icon.png')) ?>">
     <?php if (Auth::check()): ?>
         <meta name="csrf-token" content="<?= h(Auth::csrfToken()) ?>">
     <?php endif; ?>

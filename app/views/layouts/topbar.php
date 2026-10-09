@@ -54,6 +54,7 @@ $initial = strtoupper(mb_substr($currentUser['name'] ?? 'U', 0, 1));
                 <?php endif; ?>
                 <li><a class="dropdown-item" href="<?= h(url('users/password')) ?>"><i class="bi bi-shield-lock"></i> Change password</a></li>
                 <li><a class="dropdown-item" href="<?= h(url()) ?>"><i class="bi bi-globe2"></i> View website</a></li>
+                <li><button class="dropdown-item" type="button" data-install-app hidden><i class="bi bi-phone"></i> Install app</button></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="<?= h(url('logout')) ?>"><i class="bi bi-box-arrow-right"></i> Sign out</a></li>
             </ul>

@@ -24,6 +24,12 @@
                         <i class="bi bi-instagram"></i> <?= h(company_social_handle() ?: 'Instagram') ?>
                     </a>
                 <?php endif; ?>
+                <button class="site-footer-install" type="button" data-install-app hidden>
+                    <i class="bi bi-phone"></i> Install the <?= h(company_name()) ?> app
+                </button>
+                <small class="site-footer-ios-tip" data-ios-install-tip hidden>
+                    <i class="bi bi-box-arrow-up"></i> On iPhone: tap Share, then <strong>Add to Home Screen</strong> to install the app.
+                </small>
             </div>
 
             <nav class="site-footer-col" aria-label="Shop">
@@ -73,6 +79,10 @@
     </div>
 <?php else: ?>
     </main>
+<?php endif; ?>
+
+<?php if (($layout ?? '') === 'public' || Auth::check()): ?>
+    <?php require __DIR__ . '/bottom-nav.php'; ?>
 <?php endif; ?>
 
 <?php if (($layout ?? '') === 'public' || Auth::role() === 'customer'): ?>
