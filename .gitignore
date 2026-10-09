@@ -24,3 +24,6 @@ storage/logs/*
 
 # Local Java runtime (not part of the web app; 370 MB)
 app/config/oracleJdk-27/
+
+# Hosting packages (tools/package_for_hosting.ps1) - contain customer data
+deploy/
