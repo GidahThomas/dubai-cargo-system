@@ -19,8 +19,21 @@ class ProductController extends Controller
             return;
         }
 
+        if (Auth::role() === 'customer') {
+            $productModel = new Product();
+            $this->view('products/shop', [
+                'pageTitle' => 'Shop Products',
+                'products' => $productModel->all($filters, true),
+                'categories' => $productModel->categories(50),
+                'brands' => $productModel->brands(),
+                'filters' => $filters,
+                'cartCount' => CartController::count(),
+            ]);
+            return;
+        }
+
         $activeLocationId = $this->activeLocationId();
-        $products = (new Product())->all($filters, Auth::role() === 'customer', $activeLocationId);
+        $products = (new Product())->all($filters, false, $activeLocationId);
 
         $this->view('products/index', [
             'pageTitle' => 'Products',

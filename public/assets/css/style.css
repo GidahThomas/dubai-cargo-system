@@ -4255,3 +4255,276 @@ body.public-body > .public-footer {
         overflow-wrap: anywhere;
     }
 }
+
+/* =====================================================================
+   Signed-in area polish
+   ===================================================================== */
+
+/* Sidebar: every item fits on a 900px-tall laptop screen. */
+@media (min-width: 992px) {
+    .app-sidebar {
+        inset: 16px auto 16px 20px;
+        height: calc(100vh - 32px);
+        padding: 12px;
+    }
+
+    .app-main {
+        margin-left: calc(var(--sidebar-width) + 40px);
+        width: calc(100% - var(--sidebar-width) - 40px);
+    }
+
+    .sidebar-user {
+        margin-bottom: 8px;
+        padding: 8px 10px;
+    }
+
+    .sidebar-nav a {
+        padding: 6px 10px;
+        font-size: 0.82rem;
+    }
+
+    .sidebar-section-title {
+        margin: 8px 10px 2px;
+    }
+
+    .sidebar-footer {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding-top: 8px;
+    }
+
+    .sidebar-footer-link {
+        margin-bottom: 0;
+    }
+
+    .sidebar-footer .btn {
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+}
+
+/* Short screens: show a hint that the menu scrolls. */
+.sidebar-nav {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent);
+}
+
+/* Dashboard tables: show full order numbers and totals. */
+.table-fixed-cols {
+    table-layout: auto;
+}
+
+.table-fixed-cols td,
+.table-fixed-cols th {
+    white-space: normal;
+    overflow: visible;
+}
+
+/* Customer shop. */
+.shop-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.shop-toolbar-search {
+    position: relative;
+    flex: 1 1 260px;
+}
+
+.shop-toolbar-search i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-muted);
+}
+
+.shop-toolbar-search .form-control {
+    padding-left: 36px;
+}
+
+.shop-toolbar .form-select {
+    flex: 0 1 180px;
+}
+
+.shop-toolbar input[type="number"] {
+    flex: 0 1 150px;
+}
+
+.shop-tabs {
+    position: static;
+    margin-bottom: 20px;
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.shop-card {
+    padding-bottom: 12px;
+}
+
+.shop-card:hover {
+    transform: none;
+}
+
+.shop-card-link {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    color: inherit;
+    text-decoration: none;
+}
+
+.shop-card-link:hover .catalog-card-name {
+    color: var(--color-primary);
+}
+
+.shop-card-cart {
+    display: flex;
+    gap: 6px;
+    margin: 0 16px;
+}
+
+.shop-card-cart input {
+    width: 64px;
+    flex: 0 0 64px;
+}
+
+.shop-card-cart .btn {
+    flex: 1;
+    white-space: nowrap;
+}
+
+a.shop-card-cart {
+    justify-content: center;
+}
+
+@media (max-width: 991.98px) {
+    /* Phones and tablets: a slim one-line top bar. */
+    .app-topbar {
+        min-height: 0;
+        padding: 10px 14px;
+        margin-bottom: 16px;
+        flex-wrap: nowrap;
+    }
+
+    .app-topbar small {
+        display: none;
+    }
+
+    .app-topbar strong {
+        overflow: hidden;
+        font-size: 0.9rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .app-topbar .page-actions {
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .app-topbar .page-actions .btn-outline-secondary {
+        display: none;
+    }
+
+    .app-topbar .topbar-location-form .form-select {
+        max-width: 130px;
+    }
+}
+
+@media (max-width: 640px) {
+    /* Statistic cards: three compact tiles per row. */
+    .stats-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .stat-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 12px;
+    }
+
+    .stat-card .stat-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+
+    .stat-card small {
+        font-size: 0.62rem;
+        letter-spacing: 0.02em;
+    }
+
+    .stat-card strong {
+        font-size: 1.25rem;
+    }
+
+    .shop-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .shop-card-cart {
+        flex-direction: column;
+        margin: 0 10px;
+    }
+
+    .shop-card-cart input {
+        width: 100%;
+        flex-basis: auto;
+    }
+
+    .shop-toolbar .form-select,
+    .shop-toolbar input[type="number"] {
+        flex: 1 1 40%;
+    }
+}
+
+.table-fixed-cols .id-truncate {
+    max-width: none;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+@media (max-width: 991.98px) {
+    /* Menu button and top bar share one row. */
+    .app-main {
+        padding-top: 14px;
+    }
+
+    .app-topbar {
+        flex-direction: row;
+        align-items: center;
+        min-height: 44px;
+        margin-left: 54px;
+    }
+
+    .app-topbar > div:first-child {
+        min-width: 0;
+    }
+
+    .app-topbar .page-actions {
+        width: auto;
+        margin-left: auto;
+    }
+
+    .app-topbar .page-actions .btn {
+        width: auto;
+        padding: 4px 10px;
+    }
+}
+
+/* Status bars size to their content instead of a fixed 250px box. */
+.status-bars {
+    min-height: 0;
+    align-content: start;
+    padding-top: 4px;
+}
